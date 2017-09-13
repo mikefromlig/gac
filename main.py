@@ -95,7 +95,7 @@ def init_shaders():
     projection(targets_sh, m_persp_projection, m_persp_modelview)
     
     #targets_model = cursor_feedback(list(mouse.values()))
-    targets_model = iso_circle(5, 1, 9)
+    targets_model = iso_circle(3, .3, 9)
 
 
 def init():
@@ -106,15 +106,28 @@ def init():
 # DISPLAY FUNCS
 
 def circle(p, r, nb_arcs):
-    return np.array([])
+    angle = 2*math.pi/nb_arcs
+    arr = []
+    for i in range(nb_arcs):
+        x1 = math.cos(i*angle)*r
+        y1 = math.sin(i*angle)*r
+        x2 = math.cos((i+1)*angle)*r
+        y2 = math.sin((i+1)*angle)*r
+        
+        arr.append(np.array([0,    0,  0])+p)
+        arr.append(np.array([x1,   y1, 0])+p)
+        arr.append(np.array([x2,   y2, 0])+p)
+    return np.array(arr)
 
 
 def iso_circle(D, W, nb_targets):
     
     targets = []
-    arc = 2*math.pi/nb_targets
+    angle = 2*math.pi/nb_targets
     for i in range(nb_targets):
-        targets.extend(circle([0,0,0], W/2.0, 20))
+        x = math.cos(i*angle)*D
+        y = math.sin(i*angle)*D
+        targets.extend(circle([x, y, 0], W/2.0, 20))
     
     return np.array(targets)
 
