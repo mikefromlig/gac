@@ -17,7 +17,8 @@ except:
 
 ###### LOCAL LIBS
 import libs.shader      as sh
-import libs.viewpoint    as vp
+import libs.viewpoint   as vp
+import libs.targets     as t
 
 ################################################################################
 # GLOBALS
@@ -26,50 +27,12 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
 ## shaders
-targets_sh = None
-targets_current = 0
-targets_radius = .3
-targets_amplitude = 3
-targets_nb = 9
-targets_positions = []
-
+iso_circle = t.targets(9, 3, .3)
+iso_circle.make_circle()
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
-def distance(a, b):
-    r = 0
-    for i in range(len(a)):
-        r += (a[i]-b[i])*(a[i]-b[i])
-    return math.sqrt(r)
-
-
-def next_target():
-    return (targets_current + int(targets_nb/2)) % targets_nb
-
-#m: mouse position ; r: target radius
-def is_target_clicked(m, i):
-    
-    #target_center
-    pc = m_persp_projection.dot(m_persp_modelview.dot(np.array(targets_positions[i])))
-    pc = pc/pc[3]
-    pc = pc/pc[2]
-    pc = [window['w']*(pc[0]+1)/2.0, window['h']*(pc[1]+1)/2.0]
-    
-    #target_edge
-    edge = np.array(targets_positions[i]) + np.array([1, 0, 0, 0])*targets_radius
-    pe = m_persp_projection.dot(m_persp_modelview.dot(edge))
-    pe = pe/pe[3]
-    pe = pe/pe[2]
-    pe = [window['w']*(pe[0]+1)/2.0, window['h']*(pe[1]+1)/2.0]
-    
-    dtm = distance(pc, m)
-    r   = distance(pe, pc)
-    
-    if dtm <= r:
-        return 1
-    else:
-        return 0
 
 def projection(sh, matp, matm):
     
@@ -90,7 +53,6 @@ def init_OGL():
 
 
 def init_shaders():
-    global targets_vbos, targets_sh, targets_model
     global m_persp_projection
     global m_persp_modelview
     
@@ -110,23 +72,22 @@ def init_shaders():
     
     ##########################
     # techniques shader (visual feedback)
-    targets_vbos     = glGenBuffers(2)
+    iso_circle.vbos     = glGenBuffers(2)
     targets_sh_attr  = [0, 1]
     
-    targets_model = [np.array([]), np.array([])]
-    glBindBuffer(GL_ARRAY_BUFFER, targets_vbos[0])
-    glBufferData(GL_ARRAY_BUFFER, targets_model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
     glVertexAttribPointer(targets_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(targets_sh_attr[0])
     
-    glBindBuffer(GL_ARRAY_BUFFER, targets_vbos[1])
-    glBufferData(GL_ARRAY_BUFFER, targets_model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
     glVertexAttribPointer(targets_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(targets_sh_attr[1])
     
     print('\tTargets feedback shader...', end='')
-    targets_sh = sh.create('shaders/targets_vert.vert',None,'shaders/targets_frag.vert', targets_sh_attr, ['in_vertex', 'in_color'])
-    if not targets_sh:
+    iso_circle.sh = sh.create('shaders/targets_vert.vert',None,'shaders/targets_frag.vert', targets_sh_attr, ['in_vertex', 'in_color'])
+    if not iso_circle.sh:
         exit(1)
     print('\tOk')
     
@@ -136,10 +97,8 @@ def init_shaders():
     m_persp_modelview[2][3] = -10
     m_persp_projection  = vp.perspective(45.0, window['w']/window['h'], 0.01, 10000.)
     
-    glUseProgram(targets_sh)
-    projection(targets_sh, m_persp_projection, m_persp_modelview)
-    
-    targets_model = iso_circle(targets_amplitude, targets_radius*2, targets_nb, targets_current)
+    glUseProgram(iso_circle.sh)
+    projection(iso_circle.sh, m_persp_projection, m_persp_modelview)
 
 
 def init():
@@ -149,45 +108,6 @@ def init():
 
 ################################################################################
 # DISPLAY FUNCS
-
-def circle(p, r, nb_arcs, color):
-    angle = 2*math.pi/nb_arcs
-    arr, col = [], []
-    for i in range(nb_arcs):
-        x1 = math.cos(i*angle)*r
-        y1 = math.sin(i*angle)*r
-        x2 = math.cos((i+1)*angle)*r
-        y2 = math.sin((i+1)*angle)*r
-        
-        arr.append(np.array([0,    0,  0])+p)
-        arr.append(np.array([x1,   y1, 0])+p)
-        arr.append(np.array([x2,   y2, 0])+p)
-        col.append(color)
-        col.append(color)
-        col.append(color)
-    return np.array(arr), np.array(col)
-
-
-def iso_circle(D, W, nb_targets, hi_id):
-    
-    global targets_positions
-    targets = []
-    colors = []
-    angle = 2*math.pi/nb_targets
-    
-    targets_positions = []
-    for i in range(nb_targets):
-        x = math.cos(i*angle)*D
-        y = math.sin(i*angle)*D
-        color = [1, 0, 0, .3]
-        if i == hi_id:
-            color = [0, 1, 0, 1]
-        t, c = circle([x, y, 0], W/2.0, 20, color)
-        targets.extend(t)
-        colors.extend(c)
-        targets_positions.append([x, y, 0, 1])
-        
-    return [np.array(targets), np.array(colors)]
 
 
 def cursor_feedback(p):
@@ -212,14 +132,14 @@ def display():
     
     #########################
     # display targets
-    glUseProgram(targets_sh)
-    glBindBuffer(GL_ARRAY_BUFFER, targets_vbos[0])
-    glBufferData(GL_ARRAY_BUFFER, targets_model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glUseProgram(iso_circle.sh)
+    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
     
-    glBindBuffer(GL_ARRAY_BUFFER, targets_vbos[1])
-    glBufferData(GL_ARRAY_BUFFER, targets_model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
 
-    glDrawArrays(GL_TRIANGLES, 0, len(targets_model[0]))
+    glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
     
     glutSwapBuffers()
 
@@ -245,9 +165,9 @@ def clicks(button, state, x, y):
     mouse['y'] = y
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
-            if is_target_clicked([x, window['h']-y], targets_current):
-                targets_current = next_target()
-                targets_model = iso_circle(targets_amplitude, targets_radius*2, targets_nb, targets_current)
+            if iso_circle.is_current_clicked([x, window['h']-y], m_persp_projection, m_persp_modelview, window['w'], window['h']):
+                iso_circle.next()
+                iso_circle.make_circle()
     
     glutPostRedisplay()
 
