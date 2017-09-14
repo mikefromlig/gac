@@ -27,11 +27,49 @@ mouse   = {'x': 0, 'y': 0}
 
 ## shaders
 targets_sh = None
+targets_current = 0
+targets_radius = .3
+targets_amplitude = 3
+targets_nb = 9
+targets_positions = []
 
 
 ################################################################################
-# INIT FUNCS
+# INIT & COMPUTATION FUNCS
 
+def distance(a, b):
+    r = 0
+    for i in range(len(a)):
+        r += (a[i]-b[i])*(a[i]-b[i])
+    return math.sqrt(r)
+
+
+def next_target():
+    return (targets_current + int(targets_nb/2)) % targets_nb
+
+#m: mouse position ; r: target radius
+def is_target_clicked(m, i):
+    
+    #target_center
+    pc = m_persp_projection.dot(m_persp_modelview.dot(np.array(targets_positions[i])))
+    pc = pc/pc[3]
+    pc = pc/pc[2]
+    pc = [window['w']*(pc[0]+1)/2.0, window['h']*(pc[1]+1)/2.0]
+    
+    #target_edge
+    edge = np.array(targets_positions[i]) + np.array([1, 0, 0, 0])*targets_radius
+    pe = m_persp_projection.dot(m_persp_modelview.dot(edge))
+    pe = pe/pe[3]
+    pe = pe/pe[2]
+    pe = [window['w']*(pe[0]+1)/2.0, window['h']*(pe[1]+1)/2.0]
+    
+    dtm = distance(pc, m)
+    r   = distance(pe, pc)
+    
+    if dtm <= r:
+        return 1
+    else:
+        return 0
 
 def projection(sh, matp, matm):
     
@@ -53,6 +91,8 @@ def init_OGL():
 
 def init_shaders():
     global targets_vbos, targets_sh, targets_model
+    global m_persp_projection
+    global m_persp_modelview
     
     ##########################
     # general vertex array object
@@ -93,14 +133,13 @@ def init_shaders():
     ##########################
     # init projections
     m_persp_modelview   = np.identity(4)
-    m_persp_modelview[2][3] = -7.5
+    m_persp_modelview[2][3] = -10
     m_persp_projection  = vp.perspective(45.0, window['w']/window['h'], 0.01, 10000.)
     
     glUseProgram(targets_sh)
     projection(targets_sh, m_persp_projection, m_persp_modelview)
     
-    #targets_model = cursor_feedback(list(mouse.values()))
-    targets_model = iso_circle(3, .3, 9, 0)
+    targets_model = iso_circle(targets_amplitude, targets_radius*2, targets_nb, targets_current)
 
 
 def init():
@@ -131,18 +170,23 @@ def circle(p, r, nb_arcs, color):
 
 def iso_circle(D, W, nb_targets, hi_id):
     
+    global targets_positions
     targets = []
     colors = []
     angle = 2*math.pi/nb_targets
+    
+    targets_positions = []
     for i in range(nb_targets):
         x = math.cos(i*angle)*D
         y = math.sin(i*angle)*D
-        color = [1, 0, 0, 1]
+        color = [1, 0, 0, .3]
         if i == hi_id:
             color = [0, 1, 0, 1]
         t, c = circle([x, y, 0], W/2.0, 20, color)
         targets.extend(t)
         colors.extend(c)
+        targets_positions.append([x, y, 0, 1])
+        
     return [np.array(targets), np.array(colors)]
 
 
@@ -193,6 +237,21 @@ def keyboard(key, x, y):
         print(key)
 
 
+def clicks(button, state, x, y):
+    
+    global targets_current, targets_model
+    
+    mouse['x'] = x
+    mouse['y'] = y
+    if button == GLUT_LEFT_BUTTON:
+        if state == GLUT_DOWN:
+            if is_target_clicked([x, window['h']-y], targets_current):
+                targets_current = next_target()
+                targets_model = iso_circle(targets_amplitude, targets_radius*2, targets_nb, targets_current)
+    
+    glutPostRedisplay()
+
+
 def mouse_passive(x, y):
     mouse['x'] = x
     mouse['y'] = y
@@ -217,6 +276,7 @@ init()
 
 glutDisplayFunc(display)
 glutKeyboardFunc(keyboard)
+glutMouseFunc(clicks)
 glutPassiveMotionFunc(mouse_passive)
 glutIdleFunc(idle)
 glutMainLoop()
