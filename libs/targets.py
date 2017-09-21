@@ -15,6 +15,7 @@ class targets:
         self.vbos       = None
         self.model      = None
         self.positions  = []
+        self.display    = True
     
     
     def make_circle(self):
@@ -24,8 +25,8 @@ class targets:
         angle = 2*math.pi/self.nb
         
         for i in range(self.nb):
-            x = math.cos(i*angle)*self.amplitude
-            y = math.sin(i*angle)*self.amplitude
+            x = math.cos(i*angle)*self.amplitude/2.0
+            y = math.sin(i*angle)*self.amplitude/2.0
             color = [1, 0, 0, .3]
             if i == self.current:
                 color = [0, 1, 0, 1]

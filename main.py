@@ -18,6 +18,7 @@ except:
 ###### LOCAL LIBS
 import libs.shader      as sh
 import libs.targets     as t
+import libs.object      as o
 from libs.camera import *
 
 ################################################################################
@@ -28,12 +29,16 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
 ## targets
-iso_circle = t.targets(31, 4, .3)
+iso_circle = t.targets(31, 8, .3)
 iso_circle.make_circle()
+
+## distractor
+object = o.object()
 
 ## camera
 cam = camera([0, 0, 10], [0, 0, 0], 45.0, window['w']/window['h'])
 cam.wiggle = True
+
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
@@ -73,34 +78,58 @@ def init_shaders():
         sys.exit()
     
     ##########################
-    # techniques shader (visual feedback)
+    # iso circle shader
     iso_circle.vbos     = glGenBuffers(2)
-    targets_sh_attr  = [0, 1]
+    iso_circle_sh_attr  = [0, 1]
     
     glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
     glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
-    glVertexAttribPointer(targets_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(targets_sh_attr[0])
+    glVertexAttribPointer(iso_circle_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(iso_circle_sh_attr[0])
     
     glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
     glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
-    glVertexAttribPointer(targets_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(targets_sh_attr[1])
+    glVertexAttribPointer(iso_circle_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(iso_circle_sh_attr[1])
     
     print('\tTargets feedback shader...', end='')
-    iso_circle.sh = sh.create('shaders/targets_vert.vert',None,'shaders/targets_frag.vert', targets_sh_attr, ['in_vertex', 'in_color'])
+    iso_circle.sh = sh.create('shaders/targets_vert.vert',None,'shaders/targets_frag.vert', iso_circle_sh_attr, ['in_vertex', 'in_color'])
     if not iso_circle.sh:
+        exit(1)
+    print('\tOk')
+    
+    
+    ##########################
+    # object shader
+    object.vbos     = glGenBuffers(2)
+    object_sh_attr  = [2, 3]
+    
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, object.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(object_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(object_sh_attr[0])
+    
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, object.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(object_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(object_sh_attr[1])
+    
+    print('\tObject feedback shader...', end='')
+    object.sh = sh.create('shaders/object_vert.vert',None,'shaders/object_frag.vert', object_sh_attr, ['in_vertex', 'in_color'])
+    if not object.sh:
         exit(1)
     print('\tOk')
     
     ##########################
     # init projections
-    cam.wiggle_pivot = iso_circle.positions[0]
     cam.compute_modelview()
     cam.compute_perspective(window['w']/window['h'])
     
     glUseProgram(iso_circle.sh)
     projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
+    
+    glUseProgram(object.sh)
+    projection(object.sh, cam.m_projection, cam.m_modelview)
 
 
 def init():
@@ -112,6 +141,7 @@ def init():
 # DISPLAY FUNCS
 
 
+'''
 def cursor_feedback(p):
     left    = np.array([1,0])
     up      = np.array([0,1])
@@ -127,22 +157,26 @@ def cursor_feedback(p):
     
     z = np.zeros((len(arr),1), dtype='float32')
     return np.append(arr, z, axis=1)
-
+'''
 
 def display():
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
     #########################
     # display targets
-    glUseProgram(iso_circle.sh)
-    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
-    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    if iso_circle.display:
+        glUseProgram(iso_circle.sh)
+        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
     
-    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
-    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
-    
-    glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
-    
+    if object.display:
+        glUseProgram(object.sh)
+        glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
     glutSwapBuffers()
 
 
@@ -156,6 +190,10 @@ def keyboard(key, x, y):
         glutFullScreen()
     elif key == b' ':
         cam.wiggle = not cam.wiggle
+    elif key == b't':
+        iso_circle.display = not iso_circle.display
+    elif key == b'o':
+        object.display = not object.display
     else:
         print(key)
 
@@ -195,6 +233,9 @@ def idle():
     
     glUseProgram(iso_circle.sh)
     projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
+    
+    glUseProgram(object.sh)
+    projection(object.sh, cam.m_projection, cam.m_modelview)
     
     glutPostRedisplay()
 
