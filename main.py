@@ -17,7 +17,7 @@ except:
 
 ###### LOCAL LIBS
 import libs.shader      as sh
-import libs.targets     as t
+import libs.iso_circle  as ic
 import libs.object      as o
 from libs.camera import *
 
@@ -28,8 +28,8 @@ from libs.camera import *
 window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
-## targets
-iso_circle = t.targets(31, 8, .3)
+## iso_circle
+iso_circle = ic.iso_circle(31, 8, .3)
 iso_circle.make_circle()
 
 ## distractor
@@ -92,8 +92,8 @@ def init_shaders():
     glVertexAttribPointer(iso_circle_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(iso_circle_sh_attr[1])
     
-    print('\tTargets feedback shader...', end='')
-    iso_circle.sh = sh.create('shaders/targets_vert.vert',None,'shaders/targets_frag.vert', iso_circle_sh_attr, ['in_vertex', 'in_color'])
+    print('\tIso circle feedback shader...', end='')
+    iso_circle.sh = sh.create('shaders/iso_circle_vert.vert',None,'shaders/iso_circle_frag.vert', iso_circle_sh_attr, ['in_vertex', 'in_color'])
     if not iso_circle.sh:
         exit(1)
     print('\tOk')
@@ -162,8 +162,6 @@ def cursor_feedback(p):
 def display():
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
-    #########################
-    # display targets
     if object.display:
         glUseProgram(object.sh)
         
@@ -214,7 +212,6 @@ def keyboard(key, x, y):
 
 def clicks(button, state, x, y):
     
-    global targets_current, targets_model
     
     mouse['x'] = x
     mouse['y'] = y

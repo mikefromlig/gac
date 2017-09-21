@@ -5,7 +5,7 @@
 import math
 import numpy as np
 
-class targets:
+class iso_circle:
     def __init__(self, nb, d, w):
         
         self.nb             = nb
