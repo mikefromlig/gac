@@ -28,12 +28,12 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
 ## targets
-iso_circle = t.targets(9, 3, .3)
+iso_circle = t.targets(31, 4, .3)
 iso_circle.make_circle()
 
 ## camera
 cam = camera([0, 0, 10], [0, 0, 0], 45.0, window['w']/window['h'])
-
+cam.wiggle = True
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
@@ -95,6 +95,7 @@ def init_shaders():
     
     ##########################
     # init projections
+    cam.wiggle_pivot = iso_circle.positions[0]
     cam.compute_modelview()
     cam.compute_perspective(window['w']/window['h'])
     
@@ -153,7 +154,8 @@ def keyboard(key, x, y):
         sys.exit()
     elif key == b'f':
         glutFullScreen()
-    
+    elif key == b' ':
+        cam.wiggle = not cam.wiggle
     else:
         print(key)
 
@@ -184,7 +186,13 @@ def idle():
     window['w'] = glutGet(GLUT_WINDOW_WIDTH)
     window['h'] = glutGet(GLUT_WINDOW_HEIGHT)
     
+    #projection update (in case the window is reshaped)
     cam.compute_perspective(window['w']/window['h'])
+    
+    #wiggling rotation
+    if cam.wiggle:
+        cam.wiggle_next()
+    
     glUseProgram(iso_circle.sh)
     projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
     

@@ -18,6 +18,38 @@ def m_mult(a, b):
     return M
 
 
+def m_rotation(vector, angle):
+    v = v_normalize(vector)
+    s = math.sin(angle)
+    c = math.cos(angle)
+    C = 1 - c
+    
+    sx = s * v[0]
+    sy = s * v[1]
+    sz = s * v[2]
+    Cx = C * v[0]
+    Cy = C * v[1]
+    Cz = C * v[2]
+    Cxy = Cy * v[0]
+    Cyz = Cz * v[1]
+    Czx = Cx * v[2]
+    
+    return numpy.array([v[0] * Cx + c,      Cxy - sz,       Czx + sy,       0.0,
+                       Cxy + sz,            v[1] * Cy + c,  Cyz - sx,       0.0,
+                       Czx - sy,            Cyz + sx,       v[2] * Cz + c,  0.0,
+                       0.0,                 0.0,            0.0,            1.0]).reshape((4,4))
+
+
+def rotate(p, vector, angle, pivot=None):
+    M = m_rotation(vector, angle)
+    if not pivot:
+        return M.dot(numpy.array([p[0], p[1], p[2], 1.0]))[:3]
+    else:
+        po = numpy.array([p[0], p[1], p[2], 1.0])
+        pi = numpy.array([pivot[0], pivot[1], pivot[2], 1.0])
+        return (M.dot( po - pi) +pi)[:3]
+
+
 def v_normalize(v):
     try:
         n = numpy.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
