@@ -40,9 +40,11 @@ def m_rotation(vector, angle):
                        0.0,                 0.0,            0.0,            1.0]).reshape((4,4))
 
 
-def rotate(p, vector, angle, pivot=None):
+def rotate(p, vector, angle, pivot = []):
+    
     M = m_rotation(vector, angle)
-    if not pivot:
+    
+    if len(pivot) == 0:
         return M.dot(numpy.array([p[0], p[1], p[2], 1.0]))[:3]
     else:
         po = numpy.array([p[0], p[1], p[2], 1.0])
@@ -70,7 +72,8 @@ def v_cross (u,v):
 
 def perspective(fov, aspect, near, far):
     
-    d = 1/math.tan(fov/2.)
+    rfov = fov*math.pi/180.
+    d = 1/math.tan(rfov/2.)
     mat = numpy.zeros((4,4))
     
     mat[0][0] = d/aspect

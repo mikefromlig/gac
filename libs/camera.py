@@ -15,8 +15,8 @@ class camera():
         self.up         = [0,1,0]
         self.v_angle    = view_angle
         self.ratio      = ratio
-        self.near       = 0.001
-        self.far        = 100000.
+        self.near       = .01
+        self.far        = 1000.
         
         self.m_projection = None
         self.m_modelview = None

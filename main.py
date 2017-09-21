@@ -29,18 +29,32 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
 ## iso_circle
-iso_circle = ic.iso_circle(31, 8, .3)
+iso_circle = ic.iso_circle(9, 8, .3)
 iso_circle.make_circle()
 
 ## distractor
-object = o.object()
+object = o.object(_iso_circle = iso_circle)
 
 ## camera
-cam = camera([0, 0, 10], [0, 0, 0], 45.0, window['w']/window['h'])
+cam = camera([0, 0, 15], [0, 0, 0], 45.0, window['w']/window['h'])
 cam.wiggle = True
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
+
+
+def mouse_intersection(mouse_x, mouse_y, camera, win_w, win_h):
+    
+    winZ = glReadPixels( mouse_x, mouse_y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT);
+    if winZ[0][0] > 0.999999:
+        return [0, 0, 0]
+    
+    inv = np.linalg.inv(np.dot(camera.m_projection, camera.m_modelview))
+    res = inv.dot([    2*(mouse_x)/win_w -1,
+                        2*(win_h - mouse_y)/win_h -1,
+                        2*winZ -1,
+                        1   ])
+    return (res/res[3])[:3]
 
 
 def projection(sh, matp, matm):
@@ -133,6 +147,7 @@ def init_shaders():
 
 
 def init():
+    print("\nInit")
     init_OGL()
     init_shaders()
 
@@ -195,7 +210,7 @@ def keyboard(key, x, y):
         sys.exit()
     elif key == b'f':
         glutFullScreen()
-    elif key == b' ':
+    elif key == b'w':
         cam.wiggle = not cam.wiggle
     elif key == b't':
         iso_circle.display = not iso_circle.display
@@ -211,7 +226,6 @@ def keyboard(key, x, y):
 
 
 def clicks(button, state, x, y):
-    
     
     mouse['x'] = x
     mouse['y'] = y
@@ -231,12 +245,25 @@ def mouse_passive(x, y):
     glutPostRedisplay()
 
 
+def mouse_over_window():
+    if  mouse['x'] >= 0 and \
+        mouse['x'] <= window['w'] and \
+        mouse['y'] >= 0 and \
+        mouse['y'] <= window['h'] :
+        return True
+    else:
+        return False
+
+
 def idle():
     window['w'] = glutGet(GLUT_WINDOW_WIDTH)
     window['h'] = glutGet(GLUT_WINDOW_HEIGHT)
     
     #projection update (in case the window is reshaped)
     cam.compute_perspective(window['w']/window['h'])
+    
+    if mouse_over_window():
+        cam.wiggle_pivot = mouse_intersection(mouse['x'], mouse['y'], cam, window['w'], window['h'])
     
     #wiggling rotation
     if cam.wiggle:
@@ -266,4 +293,15 @@ glutKeyboardFunc(keyboard)
 glutMouseFunc(clicks)
 glutPassiveMotionFunc(mouse_passive)
 glutIdleFunc(idle)
+
+
+## Display commands
+print()
+print("Commands:")
+print("\t'esc': exit")
+print("\t'f': fullscreen")
+print("\t'w': start/stop wiggle")
+print("\t'o': display/hide object")
+print("\t'a': display all/one target")
+
 glutMainLoop()
