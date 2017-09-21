@@ -17,18 +17,22 @@ except:
 
 ###### LOCAL LIBS
 import libs.shader      as sh
-import libs.viewpoint   as vp
 import libs.targets     as t
+from libs.camera import *
 
 ################################################################################
 # GLOBALS
 
-window  = {'w': 800, 'h': 300}
+## interaction
+window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
-## shaders
+## targets
 iso_circle = t.targets(9, 3, .3)
 iso_circle.make_circle()
+
+## camera
+cam = camera([0, 0, -10], [0, 0, 0], 45.0, window['w']/window['h'])
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
@@ -53,8 +57,6 @@ def init_OGL():
 
 
 def init_shaders():
-    global m_persp_projection
-    global m_persp_modelview
     
     ##########################
     # general vertex array object
@@ -93,12 +95,12 @@ def init_shaders():
     
     ##########################
     # init projections
-    m_persp_modelview   = np.identity(4)
-    m_persp_modelview[2][3] = -10
-    m_persp_projection  = vp.perspective(45.0, window['w']/window['h'], 0.01, 10000.)
+    cam.m_modelview         = np.identity(4)
+    cam.m_modelview[2][3]   = -10
+    cam.compute_perspective(window['w']/window['h'])
     
     glUseProgram(iso_circle.sh)
-    projection(iso_circle.sh, m_persp_projection, m_persp_modelview)
+    projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
 
 
 def init():
@@ -165,7 +167,7 @@ def clicks(button, state, x, y):
     mouse['y'] = y
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
-            if iso_circle.is_current_clicked([x, window['h']-y], m_persp_projection, m_persp_modelview, window['w'], window['h']):
+            if iso_circle.is_current_clicked([x, window['h']-y], cam.m_projection, cam.m_modelview, window['w'], window['h']):
                 iso_circle.next()
                 iso_circle.make_circle()
     
@@ -180,13 +182,12 @@ def mouse_passive(x, y):
 
 
 def idle():
-    global m_persp_projection
     window['w'] = glutGet(GLUT_WINDOW_WIDTH)
     window['h'] = glutGet(GLUT_WINDOW_HEIGHT)
     
-    m_persp_projection  = vp.perspective(45.0, window['w']/window['h'], 0.01, 10000.)
+    cam.compute_perspective(window['w']/window['h'])
     glUseProgram(iso_circle.sh)
-    projection(iso_circle.sh, m_persp_projection, m_persp_modelview)
+    projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
     
     glutPostRedisplay()
 
