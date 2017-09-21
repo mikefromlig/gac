@@ -164,8 +164,20 @@ def display():
     
     #########################
     # display targets
+    if object.display:
+        glUseProgram(object.sh)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, object.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, object.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, object.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, object.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
+    
     if iso_circle.display:
         glUseProgram(iso_circle.sh)
+        
         glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
         glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
         
@@ -174,9 +186,6 @@ def display():
         
         glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
     
-    if object.display:
-        glUseProgram(object.sh)
-        glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
     glutSwapBuffers()
 
 
@@ -192,10 +201,15 @@ def keyboard(key, x, y):
         cam.wiggle = not cam.wiggle
     elif key == b't':
         iso_circle.display = not iso_circle.display
+    elif key == b'a':
+        iso_circle.display_all = not iso_circle.display_all
+        iso_circle.make_circle()
     elif key == b'o':
         object.display = not object.display
     else:
         print(key)
+    
+    glutPostRedisplay()
 
 
 def clicks(button, state, x, y):

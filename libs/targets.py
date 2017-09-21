@@ -7,15 +7,17 @@ import numpy as np
 
 class targets:
     def __init__(self, nb, d, w):
-        self.nb         = nb
-        self.amplitude  = d
-        self.current    = 0
-        self.width      = w
-        self.sh         = None
-        self.vbos       = None
-        self.model      = None
-        self.positions  = []
-        self.display    = True
+        
+        self.nb             = nb
+        self.amplitude      = d
+        self.current        = 0
+        self.width          = w
+        self.sh             = None
+        self.vbos           = None
+        self.model          = None
+        self.positions      = []
+        self.display        = True
+        self.display_all    = True
     
     
     def make_circle(self):
@@ -27,9 +29,12 @@ class targets:
         for i in range(self.nb):
             x = math.cos(i*angle)*self.amplitude/2.0
             y = math.sin(i*angle)*self.amplitude/2.0
-            color = [1, 0, 0, .3]
+            if self.display_all:
+                color = [1, 0, 0, .3]
+            else:
+                color = [0, 1, 1, 0]
             if i == self.current:
-                color = [0, 1, 0, 1]
+                    color = [0, 1, 0, 1]
             t, c = circle([x, y, 0], self.width/2.0, 20, color)
             vertices.extend(t)
             colors.extend(c)
