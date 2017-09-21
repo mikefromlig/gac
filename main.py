@@ -32,7 +32,7 @@ iso_circle = t.targets(9, 3, .3)
 iso_circle.make_circle()
 
 ## camera
-cam = camera([0, 0, -10], [0, 0, 0], 45.0, window['w']/window['h'])
+cam = camera([0, 0, 10], [0, 0, 0], 45.0, window['w']/window['h'])
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
@@ -95,8 +95,7 @@ def init_shaders():
     
     ##########################
     # init projections
-    cam.m_modelview         = np.identity(4)
-    cam.m_modelview[2][3]   = -10
+    cam.compute_modelview()
     cam.compute_perspective(window['w']/window['h'])
     
     glUseProgram(iso_circle.sh)
@@ -140,7 +139,7 @@ def display():
     
     glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
     glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
-
+    
     glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
     
     glutSwapBuffers()
