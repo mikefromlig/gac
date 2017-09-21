@@ -23,7 +23,7 @@ import libs.targets     as t
 ################################################################################
 # GLOBALS
 
-window  = {'w': 800, 'h': 600}
+window  = {'w': 800, 'h': 300}
 mouse   = {'x': 0, 'y': 0}
 
 ## shaders
@@ -180,8 +180,15 @@ def mouse_passive(x, y):
 
 
 def idle():
+    global m_persp_projection
     window['w'] = glutGet(GLUT_WINDOW_WIDTH)
     window['h'] = glutGet(GLUT_WINDOW_HEIGHT)
+    
+    m_persp_projection  = vp.perspective(45.0, window['w']/window['h'], 0.01, 10000.)
+    glUseProgram(iso_circle.sh)
+    projection(iso_circle.sh, m_persp_projection, m_persp_modelview)
+    
+    glutPostRedisplay()
 
 
 ################################################################################
