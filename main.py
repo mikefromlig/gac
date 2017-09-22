@@ -29,7 +29,7 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': 0, 'y': 0}
 
 ## iso_circle
-iso_circle = ic.iso_circle(9, 8, .3)
+iso_circle = ic.iso_circle(9, 8, 2) # nb targets, amplitude, ID
 iso_circle.make_circle()
 
 ## distractor
@@ -276,6 +276,10 @@ def idle():
     projection(object.sh, cam.m_projection, cam.m_modelview)
     
     glutPostRedisplay()
+
+
+################################################################################
+# SANDBOX
 
 
 ################################################################################

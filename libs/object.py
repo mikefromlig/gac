@@ -7,13 +7,6 @@ import math
 import numpy as np
 
 
-def distance(a, b):
-    r = 0
-    for i in  range(len(a)):
-        r += (a[i]-b[i])*(a[i]-b[i])
-    return math.sqrt(r)
-
-
 class object:
     def __init__(self, file=None, _iso_circle=None):
         self.sh         = None
@@ -28,11 +21,10 @@ class object:
             sys.exit()
         
     def make_distractor(self, iso_circle, nb_waves):
-        first_target = iso_circle.positions[0]
-        second_target = iso_circle.positions[int((iso_circle.nb - 1)/2)]
         
-        radius = distance(first_target, second_target)
-        
+        def compute_a_w(ID, A, rho, i):
+            Ai = A*(1 + 1/((2**ID - 1)*rho - 1/2))**i
+            return [Ai, Ai/(2**ID - 1)]
         
         vertices    = [ [-5, -5, -1], [5, -5, -1],    [5, 5, -1], 
                         [-5, -5, -1], [5, 5, -1],     [-5, 5, -1] ]

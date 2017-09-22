@@ -5,13 +5,21 @@
 import math
 import numpy as np
 
+
+def distance(a, b):
+    r = 0
+    for i in  range(len(a)):
+        r += (a[i]-b[i])*(a[i]-b[i])
+    return math.sqrt(r)
+
+
 class iso_circle:
-    def __init__(self, nb, d, w):
+    def __init__(self, nb, D, ID):
         
         self.nb             = nb
-        self.amplitude      = d
+        self.diameter       = D
+        self.ID             = ID
         self.current        = 0
-        self.width          = w
         self.sh             = None
         self.vbos           = None
         self.model          = None
@@ -27,19 +35,23 @@ class iso_circle:
         angle = 2*math.pi/self.nb
         
         for i in range(self.nb):
-            x = math.cos(i*angle)*self.amplitude/2.0
-            y = math.sin(i*angle)*self.amplitude/2.0
+            x = math.cos(i*angle)*self.diameter/2.0
+            y = math.sin(i*angle)*self.diameter/2.0
+            self.positions.append([x, y, 0, 1])
+            
+        self.amplitude = distance(self.positions[0], self.positions[int((self.nb - 1)/2)])
+        self.width     = self.amplitude/(2**self.ID - 1)
+        
+        for i in range(self.nb):
+            color = [0, 1, 1, 0]
             if self.display_all:
                 color = [1, 0, 0, .3]
-            else:
-                color = [0, 1, 1, 0]
             if i == self.current:
                     color = [0, 1, 0, 1]
-            t, c = circle([x, y, 0], self.width/2.0, 20, color)
+            t, c = circle(self.positions[i][:3], self.width/2.0, 20, color)
             vertices.extend(t)
             colors.extend(c)
-            self.positions.append([x, y, 0, 1])
-        
+            
         self.model = [np.array(vertices), np.array(colors)]
     
     
