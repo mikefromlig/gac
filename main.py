@@ -36,7 +36,7 @@ iso_circle.make_circle()
 object = o.object(_iso_circle = iso_circle)
 
 ## camera
-cam = camera([0, 0, 15], [0, 0, 0], 45.0, window['w']/window['h'])
+cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window['w']/window['h'])
 cam.wiggle = True
 
 ################################################################################
@@ -115,21 +115,29 @@ def init_shaders():
     
     ##########################
     # object shader
-    object.vbos     = glGenBuffers(2)
-    object_sh_attr  = [2, 3]
+    object.vbos     = glGenBuffers(3)
+    object_sh_attr  = [2, 3, 4]
     
+    #vertices
     glBindBuffer(GL_ARRAY_BUFFER, object.vbos[0])
     glBufferData(GL_ARRAY_BUFFER, object.model[0].astype('float32'), GL_DYNAMIC_DRAW)
     glVertexAttribPointer(object_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(object_sh_attr[0])
     
+    #colors
     glBindBuffer(GL_ARRAY_BUFFER, object.vbos[1])
     glBufferData(GL_ARRAY_BUFFER, object.model[1].astype('float32'), GL_DYNAMIC_DRAW)
     glVertexAttribPointer(object_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(object_sh_attr[1])
     
+    #normals
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbos[2])
+    glBufferData(GL_ARRAY_BUFFER, object.model[2].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(object_sh_attr[2], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(object_sh_attr[2])
+    
     print('\tObject feedback shader...', end='')
-    object.sh = sh.create('shaders/object_vert.vert',None,'shaders/object_frag.vert', object_sh_attr, ['in_vertex', 'in_color'])
+    object.sh = sh.create('shaders/object_vert.vert',None,'shaders/object_frag.vert', object_sh_attr, ['in_vertex', 'in_color', 'in_normal'])
     if not object.sh:
         exit(1)
     print('\tOk')
@@ -185,6 +193,9 @@ def display():
         
         glBindBuffer(GL_ARRAY_BUFFER, object.vbos[1])
         glBufferData(GL_ARRAY_BUFFER, object.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, object.vbos[2])
+        glBufferData(GL_ARRAY_BUFFER, object.model[2].astype('float32'), GL_DYNAMIC_DRAW)
         
         glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
     

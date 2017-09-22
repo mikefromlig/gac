@@ -7,12 +7,12 @@ import time
 import libs.viewpoint   as vp
 
 class camera():
-    def __init__(self, position, look_at, view_angle, ratio):
+    def __init__(self, position, look_at, up, view_angle, ratio):
         
         #projection params
         self.position   = position
         self.look_at    = look_at
-        self.up         = [0,1,0]
+        self.up         = up
         self.v_angle    = view_angle
         self.ratio      = ratio
         self.near       = .01
