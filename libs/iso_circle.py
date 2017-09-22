@@ -14,11 +14,12 @@ def distance(a, b):
 
 
 class iso_circle:
-    def __init__(self, nb, D, ID):
+    def __init__(self, nb, D, ID, rho):
         
         self.nb             = nb
         self.diameter       = D
         self.ID             = ID
+        self.rho            = rho
         self.current        = 0
         self.sh             = None
         self.vbos           = None
