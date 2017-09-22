@@ -26,7 +26,7 @@ class iso_circle:
         self.model          = None
         self.positions      = []
         self.display        = True
-        self.display_all    = True
+        self.display_all    = False
     
     
     def make_circle(self):

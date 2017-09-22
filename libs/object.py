@@ -57,10 +57,10 @@ def thick_circle(radius, thickness, depth, tess, color):
     normals = []
     
     for i in range(tess):
-        xl1 = math.cos(i*angle)*(radius-thickness/2.0)+4
-        xl2 = math.cos((i+1)*angle)*(radius-thickness/2.0)+4
-        xr1 = math.cos(i*angle)*(radius+thickness/2.0)+4
-        xr2 = math.cos((i+1)*angle)*(radius+thickness/2.0)+4
+        xl1 = math.cos(i*angle)*(radius-thickness/2.0)
+        xl2 = math.cos((i+1)*angle)*(radius-thickness/2.0)
+        xr1 = math.cos(i*angle)*(radius+thickness/2.0)
+        xr2 = math.cos((i+1)*angle)*(radius+thickness/2.0)
         
         yl1 = math.sin(i*angle)*(radius-thickness/2.0)
         yl2 = math.sin((i+1)*angle)*(radius-thickness/2.0)
@@ -125,6 +125,7 @@ class object:
         # distractors positions (circle radius and width)
         iso_IDs = compute_iso_IDS(iso_circle.ID, iso_circle.amplitude, iso_circle.rho, iso_circle.width/2.0, 20)
         
+        '''
         vertices    = [ [-5, -5, -1], [5, -5, -1],    [5, 5, -1], 
                         [-5, -5, -1], [5, 5, -1],     [-5, 5, -1] ]
                         
@@ -133,6 +134,7 @@ class object:
         normals     = [ [1, 1, 1], [1, 1, 1], [1, 1, 1],
                         [1, 1, 1], [1, 1, 1], [1, 1, 1]]
         '''
+        
         vertices, colors, normals = [], [], []
         tops = []
         inters = []
@@ -141,7 +143,7 @@ class object:
             # depth equations: 
             # - y = x/20 till the middle
             # - y = middle - x/20 till the target
-            depth = iso_IDs[i][0]/15.
+            depth = iso_IDs[i][0]/5.
             if i%2:
                 depth = 0
             
@@ -159,6 +161,6 @@ class object:
             vertices.extend(i[0])
             colors.extend(i[1])
             normals.extend(i[2])
-        '''
+        
         return [np.array(vertices), np.array(colors), np.array(normals)]
     

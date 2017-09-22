@@ -152,6 +152,10 @@ def init_shaders():
     
     glUseProgram(object.sh)
     projection(object.sh, cam.m_projection, cam.m_modelview)
+    
+    unif_d = glGetUniformLocation(object.sh, "displacement")
+    displacement = np.identity(4)
+    glUniformMatrix4fv(unif_d, 1, False, displacement)
 
 
 def init():
@@ -185,7 +189,7 @@ def cursor_feedback(p):
 def display():
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
-    if object.display:
+    if object.display and iso_circle.current > 0:
         glUseProgram(object.sh)
         
         glBindBuffer(GL_ARRAY_BUFFER, object.vbos[0])
@@ -243,6 +247,16 @@ def clicks(button, state, x, y):
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
             if iso_circle.is_current_clicked([x, window['h']-y], cam.m_projection, cam.m_modelview, window['w'], window['h']):
+                
+                if iso_circle.current >= 0:
+                    p = iso_circle.positions[iso_circle.current]
+                    m = np.identity(4)
+                    m[3][0] = p[0]
+                    m[3][1] = p[1]
+                    glUseProgram(object.sh)
+                    unif_d = glGetUniformLocation(object.sh, "displacement")
+                    glUniformMatrix4fv(unif_d, 1, False, m)
+
                 iso_circle.next()
                 iso_circle.make_circle()
     
