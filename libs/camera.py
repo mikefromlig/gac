@@ -16,10 +16,11 @@ class camera():
         self.v_angle    = view_angle
         self.ratio      = ratio
         self.near       = .01
-        self.far        = 1000.
+        self.far        = 100.
         
-        self.m_projection = None
-        self.m_modelview = None
+        self.m_projection   = None
+        self.m_modelview    = None
+        self.displacement   = None
         
         #wiggling params
         self.wiggle             = False

@@ -19,6 +19,7 @@ except:
 import libs.shader      as sh
 import libs.iso_circle  as ic
 import libs.object      as o
+import libs.pdp         as pdp
 from libs.camera import *
 
 ################################################################################
@@ -26,7 +27,7 @@ from libs.camera import *
 
 ## interaction
 window  = {'w': 800, 'h': 600}
-mouse   = {'x': 0, 'y': 0}
+mouse   = {'x': -1, 'y': -1}
 
 ## iso_circle
 iso_circle = ic.iso_circle(9, 8, 4, .3) # nb targets, amplitude, ID
@@ -39,18 +40,22 @@ object = o.object(_iso_circle = iso_circle)
 cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window['w']/window['h'])
 cam.wiggle = True
 
+
+pdp = pdp.pivot_point()
+pdp.display = False
+
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
 
 def mouse_intersection(mouse_x, mouse_y, camera, win_w, win_h):
     
-    winZ = glReadPixels( mouse_x, mouse_y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT);
-    if winZ[0][0] > 0.999999:
+    winZ = glReadPixels( mouse_x, win_h - mouse_y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT);
+    if winZ[0][0] > 0.99999999:
         return [0, 0, 0]
     
     inv = np.linalg.inv(np.dot(camera.m_projection, camera.m_modelview))
-    res = inv.dot([    2*(mouse_x)/win_w -1,
+    res = inv.dot([     2*(mouse_x)/win_w -1,
                         2*(win_h - mouse_y)/win_h -1,
                         2*winZ -1,
                         1   ])
@@ -106,7 +111,7 @@ def init_shaders():
     glVertexAttribPointer(iso_circle_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(iso_circle_sh_attr[1])
     
-    print('\tIso circle feedback shader...', end='')
+    print('\tIso circle shader...', end='')
     iso_circle.sh = sh.create('shaders/iso_circle_vert.vert',None,'shaders/iso_circle_frag.vert', iso_circle_sh_attr, ['in_vertex', 'in_color'])
     if not iso_circle.sh:
         exit(1)
@@ -136,9 +141,39 @@ def init_shaders():
     glVertexAttribPointer(object_sh_attr[2], 3, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(object_sh_attr[2])
     
-    print('\tObject feedback shader...', end='')
+    print('\tObject shader...', end='')
     object.sh = sh.create('shaders/object_vert.vert',None,'shaders/object_frag.vert', object_sh_attr, ['in_vertex', 'in_color', 'in_normal'])
     if not object.sh:
+        exit(1)
+    print('\tOk')
+    
+    
+    ##########################
+    # pdp shader
+    pdp.vbos     = glGenBuffers(3)
+    pdp_sh_attr  = [5, 6, 7]
+    
+    #vertices
+    glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, pdp.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(pdp_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(pdp_sh_attr[0])
+    
+    #colors
+    glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, pdp.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(pdp_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(pdp_sh_attr[1])
+    
+    #normals
+    glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[2])
+    glBufferData(GL_ARRAY_BUFFER, pdp.model[2].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(pdp_sh_attr[2], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(pdp_sh_attr[2])
+    
+    print('\tPdp shader...', end='')
+    pdp.sh = sh.create('shaders/pdp_vert.vert',None,'shaders/pdp_frag.vert', pdp_sh_attr, ['in_vertex', 'in_color', 'in_normal'])
+    if not pdp.sh:
         exit(1)
     print('\tOk')
     
@@ -150,12 +185,17 @@ def init_shaders():
     glUseProgram(iso_circle.sh)
     projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
     
+    glUseProgram(pdp.sh)
+    projection(pdp.sh, cam.m_projection, cam.m_modelview)
+    
+    unif_d = glGetUniformLocation(pdp.sh, "displacement")
+    glUniformMatrix4fv(unif_d, 1, False, pdp.displacement)
+    
     glUseProgram(object.sh)
     projection(object.sh, cam.m_projection, cam.m_modelview)
     
     unif_d = glGetUniformLocation(object.sh, "displacement")
-    displacement = np.identity(4)
-    glUniformMatrix4fv(unif_d, 1, False, displacement)
+    glUniformMatrix4fv(unif_d, 1, False, object.displacement)
 
 
 def init():
@@ -202,7 +242,7 @@ def display():
         glBufferData(GL_ARRAY_BUFFER, object.model[2].astype('float32'), GL_DYNAMIC_DRAW)
         
         glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
-    
+        
     if iso_circle.display:
         glUseProgram(iso_circle.sh)
         
@@ -213,6 +253,37 @@ def display():
         glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
         
         glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
+        
+    if mouse_over_window():
+        cam.wiggle_pivot = mouse_intersection(mouse['x'], mouse['y'], cam, window['w'], window['h'])
+    
+    if iso_circle.display and iso_circle.display_all:
+        glDisable(GL_DEPTH_TEST)
+        glUseProgram(iso_circle.sh)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
+        glEnable(GL_DEPTH_TEST)
+    
+    if pdp.display:
+        glUseProgram(pdp.sh)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, pdp.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, pdp.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, pdp.vbos[2])
+        glBufferData(GL_ARRAY_BUFFER, pdp.model[2].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glDrawArrays(GL_TRIANGLES, 0, len(pdp.model[0]))
+    #glEnable(GL_DEPTH_TEST)
     
     glutSwapBuffers()
 
@@ -234,6 +305,8 @@ def keyboard(key, x, y):
         iso_circle.make_circle()
     elif key == b'o':
         object.display = not object.display
+    elif key == b'p':
+        pdp.display = not pdp.display
     else:
         print(key)
     
@@ -250,13 +323,13 @@ def clicks(button, state, x, y):
                 
                 if iso_circle.current >= 0:
                     p = iso_circle.positions[iso_circle.current]
-                    m = np.identity(4)
-                    m[3][0] = p[0]
-                    m[3][1] = p[1]
+                    object.displacement = np.identity(4)
+                    object.displacement[3][0] = p[0]
+                    object.displacement[3][1] = p[1]
                     glUseProgram(object.sh)
                     unif_d = glGetUniformLocation(object.sh, "displacement")
-                    glUniformMatrix4fv(unif_d, 1, False, m)
-
+                    glUniformMatrix4fv(unif_d, 1, False, object.displacement)
+                
                 iso_circle.next()
                 iso_circle.make_circle()
     
@@ -287,9 +360,6 @@ def idle():
     #projection update (in case the window is reshaped)
     cam.compute_perspective(window['w']/window['h'])
     
-    if mouse_over_window():
-        cam.wiggle_pivot = mouse_intersection(mouse['x'], mouse['y'], cam, window['w'], window['h'])
-    
     #wiggling rotation
     if cam.wiggle:
         cam.wiggle_next()
@@ -299,6 +369,17 @@ def idle():
     
     glUseProgram(object.sh)
     projection(object.sh, cam.m_projection, cam.m_modelview)
+    
+    glUseProgram(pdp.sh)
+    projection(pdp.sh, cam.m_projection, cam.m_modelview)
+    
+    pdp.displacement = np.identity(4)
+    pdp.displacement[3][0] = cam.wiggle_pivot[0]
+    pdp.displacement[3][1] = cam.wiggle_pivot[1]
+    pdp.displacement[3][2] = cam.wiggle_pivot[2]
+    glUseProgram(pdp.sh)
+    unif_d = glGetUniformLocation(pdp.sh, "displacement")
+    glUniformMatrix4fv(unif_d, 1, False, pdp.displacement)
     
     glutPostRedisplay()
 
@@ -313,7 +394,7 @@ def idle():
 glutInit(sys.argv)
 glutInitDisplayString('double rgba samples=8 depth core')
 glutInitWindowSize (window['w'], window['h'])
-glutCreateWindow ('Selecting Boids (geometry shader)')
+glutCreateWindow ('Gaze Aware Pointing')
 
 init()
 
@@ -330,6 +411,7 @@ print("Commands:")
 print("\t'esc': exit")
 print("\t'f': fullscreen")
 print("\t'w': start/stop wiggle")
+print("\t'p': display/hide pivot point")
 print("\t'o': display/hide object")
 print("\t'a': display all/one target")
 

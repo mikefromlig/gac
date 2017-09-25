@@ -47,7 +47,7 @@ def compute_iso_IDS(ID, A, rho, minA, maxA):
         i += 1
         nA, nW = compute_a_w(ID, A, rho, i)
     
-    return iso_IDS.reshape((len(iso_IDS)/2), 2)
+    return iso_IDS.reshape(int(len(iso_IDS)/2), 2)
 
 
 def thick_circle(radius, thickness, depth, tess, color):
@@ -88,8 +88,12 @@ def inter_circle(top1, top2, tess, color):
     normals = []
     
     for i in range(tess):
-        l1 = top1[0][i*6+1]
-        l2 = top1[0][i*6+2]
+        if len(top1):
+            l1 = top1[0][i*6+1]
+            l2 = top1[0][i*6+2]
+        else:
+            l1 = [0, 0, 0]
+            l2 = [0, 0, 0]
         
         r1 = top2[0][i*6]
         r2 = top2[0][i*6+5]
@@ -109,18 +113,19 @@ def inter_circle(top1, top2, tess, color):
 
 class object:
     def __init__(self, file=None, _iso_circle=None):
-        self.sh         = None
-        self.vbos       = None
-        self.model      = None
-        self.display    = True
+        self.sh             = None
+        self.vbos           = None
+        self.model          = None
+        self.display        = True
+        self.displacement   = np.identity(4)
         
         if not file:
-            self.model = self.make_distractor(_iso_circle, 5)
+            self.model = self.make_distractor(_iso_circle)
         else:
             print("Obj parser not implemented yet !!!")
             sys.exit()
         
-    def make_distractor(self, iso_circle, nb_waves):
+    def make_distractor(self, iso_circle):
         
         # distractors positions (circle radius and width)
         iso_IDs = compute_iso_IDS(iso_circle.ID, iso_circle.amplitude, iso_circle.rho, iso_circle.width/2.0, 20)
@@ -150,6 +155,7 @@ class object:
             tess = 200
             tops.append(thick_circle(iso_IDs[i][0], iso_IDs[i][1], depth, tess, [1,1,1,1]))
         
+        inters.append(inter_circle([], tops[0], tess, [1,1,1,1]))
         for i in range(len(iso_IDs)-1):
             inters.append(inter_circle(tops[i], tops[i+1], tess, [1,1,1,1]))
         
