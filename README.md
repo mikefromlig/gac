@@ -1,7 +1,7 @@
 # gac
 short project about pointing
 
-needs:
+Needs:
 - python3
 - numpy
 - pyOpenGL

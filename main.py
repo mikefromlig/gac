@@ -404,8 +404,7 @@ glutMouseFunc(clicks)
 glutPassiveMotionFunc(mouse_passive)
 glutIdleFunc(idle)
 
-
-## Display commands
+## Displaying commands
 print()
 print("Commands:")
 print("\t'esc': exit")
