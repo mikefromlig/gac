@@ -40,7 +40,7 @@ class iso_circle:
             y = math.sin(i*angle)*self.diameter/2.0
             self.positions.append([x, y, 0, 1])
             
-        self.amplitude = distance(self.positions[0], self.positions[int((self.nb - 1)/2)])
+        self.amplitude = distance(self.positions[0], self.positions[int((self.nb)/2)])
         self.width     = self.amplitude/(2**self.ID - 1)
         
         for i in range(self.nb):

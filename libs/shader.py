@@ -12,7 +12,6 @@ except:
     print ('''ERROR: PyOpenGL not installed properly.''')
 
 def compile(path, type):
-    print(pl.system())
     try:
         if pl.system() == 'Linux':
             shader = '#version 130\nprecision highp float;'
