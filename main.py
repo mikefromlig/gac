@@ -399,7 +399,7 @@ if pl.system() == 'Linux':
 else:
     glutInitDisplayString('double rgba samples=8 depth core')
 glutInitWindowSize (window['w'], window['h'])
-glutCreateWindow ('Gaze Aware Cursor')
+glutCreateWindow ('Gaze Aware Pointing')
 
 init()
 
@@ -409,8 +409,7 @@ glutMouseFunc(clicks)
 glutPassiveMotionFunc(mouse_passive)
 glutIdleFunc(idle)
 
-
-## Display commands
+## Displaying commands
 print()
 print("Commands:")
 print("\t'esc': exit")
