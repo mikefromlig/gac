@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 #Michael ORTEGA - 07/April/2017
 
+import sys
+import platform as pl
+
 try:
     from OpenGL.GL      import *
     from OpenGL.GL      import shaders
@@ -9,8 +12,14 @@ except:
     print ('''ERROR: PyOpenGL not installed properly.''')
 
 def compile(path, type):
+    print(pl.system())
     try:
-        shader = open(path, 'r').read()
+        if pl.system() == 'Linux':
+            shader = '#version 130\nprecision highp float;'
+        else:
+            shader = '#version 330 core\nprecision highp float;'
+
+        shader += open(path, 'r').read()
     except:
         print('\n\n\t!!!!!!!!!!!!!!!!!!!!!!!!!')
         print('\t!!! Cannot read', path, '!!!')

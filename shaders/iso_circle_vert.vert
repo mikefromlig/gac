@@ -1,6 +1,3 @@
-#version 330 core
-precision highp float;
-
 uniform mat4 projection_mat;
 uniform mat4 modelview_mat;
 

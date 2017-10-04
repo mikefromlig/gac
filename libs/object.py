@@ -47,7 +47,7 @@ def compute_iso_IDS(ID, A, rho, minA, maxA):
         i += 1
         nA, nW = compute_a_w(ID, A, rho, i)
     
-    return iso_IDS.reshape((len(iso_IDS)/2), 2)
+    return iso_IDS.reshape(int(len(iso_IDS)/2), 2)
 
 
 def thick_circle(radius, thickness, depth, tess, color):

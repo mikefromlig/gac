@@ -391,10 +391,15 @@ def idle():
 ################################################################################
 # MAIN
 
+import platform as pl
+
 glutInit(sys.argv)
-glutInitDisplayString('double rgba samples=8 depth core')
+if pl.system() == 'Linux':
+    glutInitDisplayString('double rgba samples=8 depth')
+else:
+    glutInitDisplayString('double rgba samples=8 depth core')
 glutInitWindowSize (window['w'], window['h'])
-glutCreateWindow ('Selecting Boids (geometry shader)')
+glutCreateWindow ('Gaze Aware Cursor')
 
 init()
 
