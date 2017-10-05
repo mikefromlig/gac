@@ -16,11 +16,12 @@ except:
 
 
 ###### LOCAL LIBS
-import libs.shader      as sh
-import libs.iso_circle  as ic
-import libs.object      as o
-import libs.pdp         as pdp
-from libs.camera import *
+from    libs.camera     import *
+from    libs.expe_data  import *
+import  libs.shader     as sh
+import  libs.iso_circle as ic
+import  libs.object     as o
+import  libs.pdp        as pdp
 
 ################################################################################
 # GLOBALS
@@ -29,8 +30,12 @@ from libs.camera import *
 window  = {'w': 800, 'h': 600}
 mouse   = {'x': -1, 'y': -1}
 
+## expe info
+expe = expe_data()
+
+
 ## iso_circle
-iso_circle = ic.iso_circle(9, 8, 4, .3) # nb targets, amplitude, ID
+iso_circle = ic.iso_circle(13, 8, 6, .1) # nb targets, amplitude, ID, rho
 iso_circle.make_circle()
 
 ## distractor
@@ -40,7 +45,7 @@ object = o.object(_iso_circle = iso_circle)
 cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window['w']/window['h'])
 cam.wiggle = True
 
-
+## pivot point display
 pdp = pdp.pivot_point()
 pdp.display = False
 
@@ -88,7 +93,7 @@ def init_shaders():
     try:
         vao = glGenVertexArrays(1)
         glBindVertexArray(vao)
-        print('\t\tOk')
+        print('\tOk')
     except ValueError:
         print()
         print()
@@ -175,7 +180,7 @@ def init_shaders():
     pdp.sh = sh.create('shaders/pdp_vert.vert',None,'shaders/pdp_frag.vert', pdp_sh_attr, ['in_vertex', 'in_color', 'in_normal'])
     if not pdp.sh:
         exit(1)
-    print('\tOk')
+    print('\t\tOk')
     
     ##########################
     # init projections
@@ -390,6 +395,21 @@ def idle():
 
 ################################################################################
 # MAIN
+
+# check for command line entries
+if len(sys.argv) > 1:
+    for i in range(1,len(sys.argv)):
+        if sys.argv[i] == '-u':
+            expe.user_name = sys.argv[i+1]
+            i += 1
+        elif sys.argv[i] == '-t':
+            expe.technique = sys.argv[i+1]
+            i += 1
+
+print('Expe info')
+print('\t user: ',expe.user_name)
+print('\t tech: ',expe.technique)
+
 
 import platform as pl
 

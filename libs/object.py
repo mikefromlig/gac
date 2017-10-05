@@ -24,6 +24,8 @@ def cross(u, v):
 
 def normalize(u):
     n = math.sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2])
+    if n == 0:
+        return [0, 0, 0]
     return [u[0]/n, u[1]/n, u[2]/n]
 
 
@@ -39,6 +41,8 @@ def compute_iso_IDS(ID, A, rho, minA, maxA):
         i -= 1
         nA, nW = compute_a_w(ID, A, rho, i)
     
+    nb_before = int(len(iso_IDS)/2)
+    
     #higher than A
     i=1
     nA, nW = compute_a_w(ID, A, rho, 1)
@@ -47,7 +51,7 @@ def compute_iso_IDS(ID, A, rho, minA, maxA):
         i += 1
         nA, nW = compute_a_w(ID, A, rho, i)
     
-    return iso_IDS.reshape(int(len(iso_IDS)/2), 2)
+    return iso_IDS.reshape(int(len(iso_IDS)/2), 2), nb_before
 
 
 def thick_circle(radius, thickness, depth, tess, color):
@@ -128,7 +132,7 @@ class object:
     def make_distractor(self, iso_circle):
         
         # distractors positions (circle radius and width)
-        iso_IDs = compute_iso_IDS(iso_circle.ID, iso_circle.amplitude, iso_circle.rho, iso_circle.width/2.0, 20)
+        iso_IDs, nb_before = compute_iso_IDS(iso_circle.ID, iso_circle.amplitude, iso_circle.rho, iso_circle.width/2.0, 20)
         
         '''
         vertices    = [ [-5, -5, -1], [5, -5, -1],    [5, 5, -1], 
@@ -149,7 +153,9 @@ class object:
             # - y = x/20 till the middle
             # - y = middle - x/20 till the target
             depth = iso_IDs[i][0]/5.
-            if i%2:
+            if i%2 and nb_before%2 == 0:
+                depth = 0
+            elif not i%2 and nb_before%2:
                 depth = 0
             
             tess = 200

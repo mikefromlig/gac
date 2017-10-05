@@ -17,7 +17,7 @@ def compile(path, type):
             shader = '#version 130\nprecision highp float;'
         else:
             shader = '#version 330 core\nprecision highp float;'
-
+    
         shader += open(path, 'r').read()
     except:
         print('\n\n\t!!!!!!!!!!!!!!!!!!!!!!!!!')
