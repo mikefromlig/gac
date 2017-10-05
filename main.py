@@ -4,8 +4,10 @@
 
 ###### GLOBAL LIBS
 import sys
-import numpy as np
+import numpy    as np
 import math
+import platform as pl
+
 try:
     from OpenGL.GL      import *
     from OpenGL.GLU     import *
@@ -33,9 +35,8 @@ mouse   = {'x': -1, 'y': -1}
 ## expe info
 expe = expe_data()
 
-
 ## iso_circle
-iso_circle = ic.iso_circle(13, 8, 6, .1) # nb targets, amplitude, ID, rho
+iso_circle = ic.iso_circle(5, 8, *expe.conf[0]) # nb targets, amplitude, ID, rho
 iso_circle.make_circle()
 
 ## distractor
@@ -207,29 +208,13 @@ def init():
     print("\nInit")
     init_OGL()
     init_shaders()
+    expe.print_current_conf()
+    expe.save_current_conf()
 
 
 ################################################################################
 # DISPLAY FUNCS
 
-
-'''
-def cursor_feedback(p):
-    left    = np.array([1,0])
-    up      = np.array([0,1])
-    r = 5
-    arr = []
-    
-    nb_steps = 20
-    step = 2*math.pi/nb_steps
-    for i in range(nb_steps):
-        arr.append(p)
-        arr.append(p + r*math.cos((i+1)*step)*left + r*math.sin((i+1)*step)*up)
-        arr.append(p + r*math.cos(i*step)*left + r*math.sin(i*step)*up)
-    
-    z = np.zeros((len(arr),1), dtype='float32')
-    return np.append(arr, z, axis=1)
-'''
 
 def display():
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -320,6 +305,8 @@ def keyboard(key, x, y):
 
 def clicks(button, state, x, y):
     
+    global object
+    
     mouse['x'] = x
     mouse['y'] = y
     if button == GLUT_LEFT_BUTTON:
@@ -336,8 +323,13 @@ def clicks(button, state, x, y):
                     glUniformMatrix4fv(unif_d, 1, False, object.displacement)
                 
                 iso_circle.next()
+                if iso_circle.current == 0:
+                    if not expe.next():
+                        sys.exit()
+                    iso_circle.ID = expe.conf[expe.current][0]
+                    iso_circle.rho = expe.conf[expe.current][1]
+                    object.model = object.make_distractor(iso_circle)
                 iso_circle.make_circle()
-    
     glutPostRedisplay()
 
 
@@ -396,6 +388,17 @@ def idle():
 ################################################################################
 # MAIN
 
+## Displaying commands
+print()
+print("Commands:")
+print("\t'esc': exit")
+print("\t'f': fullscreen")
+print("\t'w': start/stop wiggle")
+print("\t'p': display/hide pivot point")
+print("\t'o': display/hide object")
+print("\t'a': display all/one target")
+
+
 # check for command line entries
 if len(sys.argv) > 1:
     for i in range(1,len(sys.argv)):
@@ -405,13 +408,14 @@ if len(sys.argv) > 1:
         elif sys.argv[i] == '-t':
             expe.technique = sys.argv[i+1]
             i += 1
+        elif sys.argv[i] == '-reload':
+            expe.reload_conf()
 
 print('Expe info')
 print('\t user: ',expe.user_name)
 print('\t tech: ',expe.technique)
 
 
-import platform as pl
 
 glutInit(sys.argv)
 if pl.system() == 'Linux':
@@ -428,15 +432,5 @@ glutKeyboardFunc(keyboard)
 glutMouseFunc(clicks)
 glutPassiveMotionFunc(mouse_passive)
 glutIdleFunc(idle)
-
-## Displaying commands
-print()
-print("Commands:")
-print("\t'esc': exit")
-print("\t'f': fullscreen")
-print("\t'w': start/stop wiggle")
-print("\t'p': display/hide pivot point")
-print("\t'o': display/hide object")
-print("\t'a': display all/one target")
 
 glutMainLoop()
