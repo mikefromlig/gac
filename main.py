@@ -20,6 +20,7 @@ except:
 ###### LOCAL LIBS
 from    libs.camera     import *
 from    libs.expe_data  import *
+import  libs.distractor as dis
 import  libs.shader     as sh
 import  libs.iso_circle as ic
 import  libs.object     as o
@@ -33,14 +34,15 @@ window  = {'w': 800, 'h': 600}
 mouse   = {'x': -1, 'y': -1}
 
 ## expe info
-expe = expe_data()
+expe = expe_data(3, 8)
 
-## iso_circle
-iso_circle = ic.iso_circle(5, 8, *expe.conf[0]) # nb targets, amplitude, ID, rho
-iso_circle.make_circle()
+## targets
+targets = o.object()
+targets.model = expe.current_circle.model
 
 ## distractor
-object = o.object(_iso_circle = iso_circle)
+object = o.object()
+object.model = expe.current_model
 
 ## camera
 cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window['w']/window['h'])
@@ -104,22 +106,22 @@ def init_shaders():
     
     ##########################
     # iso circle shader
-    iso_circle.vbos     = glGenBuffers(2)
-    iso_circle_sh_attr  = [0, 1]
+    targets.vbos     = glGenBuffers(2)
+    targets_sh_attr  = [0, 1]
     
-    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
-    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
-    glVertexAttribPointer(iso_circle_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(iso_circle_sh_attr[0])
+    glBindBuffer(GL_ARRAY_BUFFER, targets.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, targets.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(targets_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(targets_sh_attr[0])
     
-    glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
-    glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
-    glVertexAttribPointer(iso_circle_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(iso_circle_sh_attr[1])
+    glBindBuffer(GL_ARRAY_BUFFER, targets.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, targets.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(targets_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(targets_sh_attr[1])
     
     print('\tIso circle shader...', end='')
-    iso_circle.sh = sh.create('shaders/iso_circle_vert.vert',None,'shaders/iso_circle_frag.vert', iso_circle_sh_attr, ['in_vertex', 'in_color'])
-    if not iso_circle.sh:
+    targets.sh = sh.create('shaders/iso_circle_vert.vert',None,'shaders/iso_circle_frag.vert', targets_sh_attr, ['in_vertex', 'in_color'])
+    if not targets.sh:
         exit(1)
     print('\tOk')
     
@@ -188,8 +190,8 @@ def init_shaders():
     cam.compute_modelview()
     cam.compute_perspective(window['w']/window['h'])
     
-    glUseProgram(iso_circle.sh)
-    projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
+    glUseProgram(targets.sh)
+    projection(targets.sh, cam.m_projection, cam.m_modelview)
     
     glUseProgram(pdp.sh)
     projection(pdp.sh, cam.m_projection, cam.m_modelview)
@@ -208,6 +210,7 @@ def init():
     print("\nInit")
     init_OGL()
     init_shaders()
+    print()
     expe.print_current_conf()
     expe.save_current_conf()
 
@@ -219,7 +222,7 @@ def init():
 def display():
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
-    if object.display and iso_circle.current > 0:
+    if object.display and expe.current_circle.current_target > 0:
         glUseProgram(object.sh)
         
         glBindBuffer(GL_ARRAY_BUFFER, object.vbos[0])
@@ -233,32 +236,19 @@ def display():
         
         glDrawArrays(GL_TRIANGLES, 0, len(object.model[0]))
         
-    if iso_circle.display:
-        glUseProgram(iso_circle.sh)
+    if targets.display:
+        glUseProgram(targets.sh)
         
-        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
-        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        glBindBuffer(GL_ARRAY_BUFFER, targets.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, targets.model[0].astype('float32'), GL_DYNAMIC_DRAW)
         
-        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
-        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        glBindBuffer(GL_ARRAY_BUFFER, targets.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, targets.model[1].astype('float32'), GL_DYNAMIC_DRAW)
         
-        glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
+        glDrawArrays(GL_TRIANGLES, 0, len(targets.model[0]))
         
     if mouse_over_window():
         cam.wiggle_pivot = mouse_intersection(mouse['x'], mouse['y'], cam, window['w'], window['h'])
-    
-    if iso_circle.display and iso_circle.display_all:
-        glDisable(GL_DEPTH_TEST)
-        glUseProgram(iso_circle.sh)
-        
-        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[0])
-        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[0].astype('float32'), GL_DYNAMIC_DRAW)
-        
-        glBindBuffer(GL_ARRAY_BUFFER, iso_circle.vbos[1])
-        glBufferData(GL_ARRAY_BUFFER, iso_circle.model[1].astype('float32'), GL_DYNAMIC_DRAW)
-        
-        glDrawArrays(GL_TRIANGLES, 0, len(iso_circle.model[0]))
-        glEnable(GL_DEPTH_TEST)
     
     if pdp.display:
         glUseProgram(pdp.sh)
@@ -288,11 +278,11 @@ def keyboard(key, x, y):
         glutFullScreen()
     elif key == b'w':
         cam.wiggle = not cam.wiggle
-    elif key == b't':
-        iso_circle.display = not iso_circle.display
-    elif key == b'a':
-        iso_circle.display_all = not iso_circle.display_all
-        iso_circle.make_circle()
+    #elif key == b't':
+    #    iso_circle.display = not iso_circle.display
+    #elif key == b'a':
+    #    iso_circle.display_all = not iso_circle.display_all
+    #    iso_circle.make_circle()
     elif key == b'o':
         object.display = not object.display
     elif key == b'p':
@@ -311,10 +301,9 @@ def clicks(button, state, x, y):
     mouse['y'] = y
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
-            if iso_circle.is_current_clicked([x, window['h']-y], cam.m_projection, cam.m_modelview, window['w'], window['h']):
-                
-                if iso_circle.current >= 0:
-                    p = iso_circle.positions[iso_circle.current]
+            if expe.current_circle.is_current_clicked([x, window['h']-y], cam.m_projection, cam.m_modelview, window['w'], window['h']):
+                if expe.current_circle.current_target >= 0:
+                    p = expe.current_circle.positions[expe.current_circle.current_target]
                     object.displacement = np.identity(4)
                     object.displacement[3][0] = p[0]
                     object.displacement[3][1] = p[1]
@@ -322,14 +311,17 @@ def clicks(button, state, x, y):
                     unif_d = glGetUniformLocation(object.sh, "displacement")
                     glUniformMatrix4fv(unif_d, 1, False, object.displacement)
                 
-                iso_circle.next()
-                if iso_circle.current == 0:
+                expe.current_circle.next()
+                expe.current_circle.make_circle()
+                targets.model = expe.current_circle.model
+                
+                if expe.current_circle.current_target == 0:
                     if not expe.next():
                         sys.exit()
-                    iso_circle.ID = expe.conf[expe.current][0]
-                    iso_circle.rho = expe.conf[expe.current][1]
-                    object.model = object.make_distractor(iso_circle)
-                iso_circle.make_circle()
+                    expe.print_current_conf()
+                    object.model = expe.current_model
+                expe.current_circle.make_circle()
+                targets.model = expe.current_circle.model
     glutPostRedisplay()
 
 
@@ -361,8 +353,8 @@ def idle():
     if cam.wiggle:
         cam.wiggle_next()
     
-    glUseProgram(iso_circle.sh)
-    projection(iso_circle.sh, cam.m_projection, cam.m_modelview)
+    glUseProgram(targets.sh)
+    projection(targets.sh, cam.m_projection, cam.m_modelview)
     
     glUseProgram(object.sh)
     projection(object.sh, cam.m_projection, cam.m_modelview)
@@ -396,7 +388,7 @@ print("\t'f': fullscreen")
 print("\t'w': start/stop wiggle")
 print("\t'p': display/hide pivot point")
 print("\t'o': display/hide object")
-print("\t'a': display all/one target")
+#print("\t'a': display all/one target")
 
 
 # check for command line entries
@@ -414,7 +406,6 @@ if len(sys.argv) > 1:
 print('Expe info')
 print('\t user: ',expe.user_name)
 print('\t tech: ',expe.technique)
-
 
 
 glutInit(sys.argv)

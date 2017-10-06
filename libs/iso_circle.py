@@ -5,7 +5,6 @@
 import math
 import numpy as np
 
-
 def distance(a, b):
     r = 0
     for i in  range(len(a)):
@@ -20,14 +19,15 @@ class iso_circle:
         self.diameter       = D
         self.ID             = ID
         self.rho            = rho
-        self.current        = 0
+        self.current_target = 0
         self.sh             = None
         self.vbos           = None
         self.model          = None
         self.positions      = []
         self.display        = True
         self.display_all    = False
-    
+        
+        self.make_circle()
     
     def make_circle(self):
         
@@ -47,7 +47,7 @@ class iso_circle:
             color = [0, 1, 1, 0]
             if self.display_all:
                 color = [1, 0, 0, .3]
-            if i == self.current:
+            if i == self.current_target:
                     color = [0, 1, 0, 1]
             t, c = circle(self.positions[i][:3], self.width/2.0, 20, color)
             vertices.extend(t)
@@ -57,7 +57,7 @@ class iso_circle:
     
     
     def next(self):
-        self.current = (self.current + int(self.nb/2)) % self.nb
+        self.current_target = (self.current_target + int(self.nb/2)) % self.nb
     
     
     #m: mouse position ; r: target radius
@@ -67,13 +67,13 @@ class iso_circle:
             return math.sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]))
         
         #target_center
-        pc = mp.dot(mm.dot(np.array(self.positions[self.current])))
+        pc = mp.dot(mm.dot(np.array(self.positions[self.current_target])))
         pc = pc/pc[3]
         pc = pc/pc[2]
         pc = [w*(pc[0]+1)/2.0, h*(pc[1]+1)/2.0]
         
         #target_edge
-        edge = np.array(self.positions[self.current]) + np.array([1, 0, 0, 0])*self.width/2.0
+        edge = np.array(self.positions[self.current_target]) + np.array([1, 0, 0, 0])*self.width/2.0
         pe = mp.dot(mm.dot(edge))
         pe = pe/pe[3]
         pe = pe/pe[2]
