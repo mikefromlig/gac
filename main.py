@@ -30,8 +30,8 @@ import  libs.pdp        as pdp
 # GLOBALS
 
 ## interaction
-window  = {'w': 800, 'h': 600}
-mouse   = {'x': -1, 'y': -1}
+window_w, window_h = 800, 600
+mouse   = [-1, -1]
 
 ## expe info
 expe = expe_data(3, 8)
@@ -45,7 +45,7 @@ object = o.object()
 object.model = expe.current_model
 
 ## camera
-cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window['w']/window['h'])
+cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window_w/window_h)
 cam.wiggle = True
 
 ## pivot point display
@@ -188,7 +188,7 @@ def init_shaders():
     ##########################
     # init projections
     cam.compute_modelview()
-    cam.compute_perspective(window['w']/window['h'])
+    cam.compute_perspective(window_w/window_h)
     
     glUseProgram(targets.sh)
     projection(targets.sh, cam.m_projection, cam.m_modelview)
@@ -204,6 +204,9 @@ def init_shaders():
     
     unif_d = glGetUniformLocation(object.sh, "displacement")
     glUniformMatrix4fv(unif_d, 1, False, object.displacement)
+    
+    expe.m_modelview    = cam.m_modelview
+    expe.m_projection   = cam.m_projection
 
 
 def init():
@@ -248,7 +251,7 @@ def display():
         glDrawArrays(GL_TRIANGLES, 0, len(targets.model[0]))
         
     if mouse_over_window():
-        cam.wiggle_pivot = mouse_intersection(mouse['x'], mouse['y'], cam, window['w'], window['h'])
+        cam.wiggle_pivot = mouse_intersection(mouse[0], mouse[1], cam, window_w, window_h)
     
     if pdp.display:
         glUseProgram(pdp.sh)
@@ -297,11 +300,23 @@ def clicks(button, state, x, y):
     
     global object
     
-    mouse['x'] = x
-    mouse['y'] = y
+    mouse[0] = x
+    mouse[1] = y
+    
+    nt = time.time()
+    
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
-            if expe.current_circle.is_current_clicked([x, window['h']-y], cam.m_projection, cam.m_modelview, window['w'], window['h']):
+            if expe.current_circle.is_current_clicked([x, window_h-y], cam.m_projection, cam.m_modelview, window_w, window_h):
+                
+                if expe.current_circle.current_target == 0:
+                    expe.time   = nt
+                    expe.mouse  = [x, y]
+                else:
+                    expe.new_trial(nt, [x, y])
+                    expe.time   = nt
+                    expe.mouse  = [x, y]
+                
                 if expe.current_circle.current_target >= 0:
                     p = expe.current_circle.positions[expe.current_circle.current_target]
                     object.displacement = np.identity(4)
@@ -322,32 +337,34 @@ def clicks(button, state, x, y):
                     object.model = expe.current_model
                 expe.current_circle.make_circle()
                 targets.model = expe.current_circle.model
+                
+                
     glutPostRedisplay()
 
 
 def mouse_passive(x, y):
-    mouse['x'] = x
-    mouse['y'] = y
+    mouse[0] = x
+    mouse[1] = y
     
     glutPostRedisplay()
 
 
 def mouse_over_window():
-    if  mouse['x'] >= 0 and \
-        mouse['x'] <= window['w'] and \
-        mouse['y'] >= 0 and \
-        mouse['y'] <= window['h'] :
+    if  mouse[0] >= 0 and \
+        mouse[0] <= window_w and \
+        mouse[1] >= 0 and \
+        mouse[1] <= window_h :
         return True
     else:
         return False
 
 
 def idle():
-    window['w'] = glutGet(GLUT_WINDOW_WIDTH)
-    window['h'] = glutGet(GLUT_WINDOW_HEIGHT)
+    window_w = glutGet(GLUT_WINDOW_WIDTH)
+    window_h = glutGet(GLUT_WINDOW_HEIGHT)
     
     #projection update (in case the window is reshaped)
-    cam.compute_perspective(window['w']/window['h'])
+    cam.compute_perspective(window_w/window_h)
     
     #wiggling rotation
     if cam.wiggle:
@@ -413,7 +430,7 @@ if pl.system() == 'Linux':
     glutInitDisplayString('double rgba samples=8 depth')
 else:
     glutInitDisplayString('double rgba samples=8 depth core')
-glutInitWindowSize (window['w'], window['h'])
+glutInitWindowSize (window_w, window_h)
 glutCreateWindow ('Gaze Aware Pointing')
 
 init()

@@ -2,23 +2,83 @@
 # -*- coding: utf-8 -*-
 #Michael ORTEGA - 05/Oct/2017
 
+import math
 import numpy            as np
 import libs.iso_circle  as iso
 import libs.distractor  as dis
 
+
+def distance(a, b):
+    r = 0
+    for i in  range(len(a)):
+        r += (a[i]-b[i])*(a[i]-b[i])
+    return math.sqrt(r)
+
+
+def vector(a, b):
+    v = []
+    for i in range(len(a)):
+        v.append(b[i] - a[i])
+    return v
+
+
+def norme(v):
+    n = 0
+    for i in v:
+        n += i*i
+    return math.sqrt(n)
+
+
+def normalized(v):
+    res = v[:]
+    n = norme(res)
+    for i in range(len(res)):
+        res[i] /= n
+    return res
+
+
+def dot(u, v):
+    d = 0
+    for i in range(len(u)):
+        d += u[i]*v[i]
+    return d
+
+
+def cross(v1,v2):
+    return [v1[1]*v2[2]-v1[2]*v2[1],
+            v1[2]*v2[0]-v1[0]*v2[2],
+            v1[0]*v2[1]-v1[1]*v2[0]]
+
+def project(p, mp, mm, w, h):
+    n_p = mp.dot(mm.dot(np.array(p)))
+    n_p = n_p/n_p[3]
+    n_p = n_p/n_p[2]
+    return [w*(n_p[0]+1)/2.0, h*(n_p[1]+1)/2.0]
+
+
 class expe_data():
-    def __init__(self, nb_target_per_circle = 13, amplitude = 8):
+    def __init__(self, nb_target_per_circle = 13, amplitude = 8, mm = np.identity(4), mp = np.identity(4), win_w = 800, win_h = 600):
         self.user_name      = "testman"
         self.technique      = "none"
         self.ids            = np.array([[3, .6], [4, .3], [5, .2], [6, .1]])
         self.nb_trials      = 10
+        self.trials         = []
         self.circles        = []
         self.models         = []
+        self.time           = 0
+        self.mouse          = [0, 0]
         self.nb_t_p_circ    = nb_target_per_circle
         self.amplitude      = 8
         self.current_index  = 0
         self.current_circle = None
         self.current_model  = None
+        
+        #camera info
+        self.m_modelview    = mm
+        self.m_projection   = mp
+        self.window_w       = win_w
+        self.window_h       = win_h
+        
         
         for id in self.ids:
             self.circles.append(iso.iso_circle(self.nb_t_p_circ, self.amplitude, id[0], id[1]))
@@ -29,29 +89,66 @@ class expe_data():
         
         self.shuffle_trials()
         
-        self.current_circle = self.circles[int(self.conf[0][2])]
-        self.current_model  = self.models[int(self.conf[0][2])]
+        self.current_circle = self.circles[int(self.confs[0][2])]
+        self.current_model  = self.models[int(self.confs[0][2])]
         
     def shuffle_trials(self):
-        self.conf = np.repeat(self.ids, self.nb_trials, axis=0)
-        np.random.shuffle(self.conf)
+        self.confs = np.repeat(self.ids, self.nb_trials, axis=0)
+        np.random.shuffle(self.confs)
         
     def save_current_conf(self):
-        np.save("ids", self.conf[self.current_index:])
+        np.save("ids", self.confs[self.current_index:])
         
     def reload_conf(self):
         self.confs = np.load("ids.npy")
         
     def next(self):
         self.current_index += 1
-        if self.current_index == len(self.conf):
+        if self.current_index == len(self.confs):
             return False
-        self.current_circle = self.circles[int(self.conf[self.current_index][2])]
-        self.current_model  = self.models[int(self.conf[self.current_index][2])]
+        self.current_circle = self.circles[int(self.confs[self.current_index][2])]
+        self.current_model  = self.models[int(self.confs[self.current_index][2])]
         
         self.save_current_conf()
         return True
         
     def print_current_conf(self):
-        print("expe conf", self.current_index, ":", *self.conf[self.current_index])
+        print("expe conf", self.current_index, ":", *self.confs[self.current_index])
+        
+    def new_trial(self, t, m):
+        prev_pos = self.current_circle.positions[self.current_circle.current_target -1]
+        new_pos = self.current_circle.positions[self.current_circle.current_target]
+        
+        p_prev_pos  = project(prev_pos, self.m_projection, self.m_modelview, self.window_w, self.window_h)
+        p_new_pos   = project(new_pos, self.m_projection, self.m_modelview, self.window_w, self.window_h)
+        
+        self.trials.append({'id': self.confs[self.current_index][0],
+                            'rho': self.confs[self.current_index][1],
+                            'mt': t - self.time, 
+                            'p_click': self.mouse,
+                            'n_click': m, 
+                            'p_target_pos': p_prev_pos, 
+                            'n_target_pos': p_new_pos})
+        self.save_trials()
+        
+    def save_trials(self):
+        f = open(self.user_name+'_'+self.technique+'.res', 'w')
+        f.write("id, rho, angle, w, a, mt, dist\n")
+        for t in self.trials:
+            travelled_dist = distance(t['p_click'], t['n_click'])
+            targets_dist = distance(t['p_target_pos'], t['n_target_pos'])
+            v1 = [1,0]
+            v2 = normalized(vector(t['p_target_pos'], t['n_target_pos']))
+            angle = math.acos(dot(v1, v2))*180/math.pi
+            if cross([v1[0], v1[1], 0], [v2[0], v2[1], 0])[2] < 0:
+                angle = angle + 180
+            
+            f.write(str(t['id'])                    +','+
+                    str(t['rho'])                   +','+
+                    str(angle)                      +','+
+                    str(self.current_circle.width)  +','+
+                    str(targets_dist)               +','+
+                    str(travelled_dist)             +'\n'
+                    )
+        f.close()
 
