@@ -250,7 +250,7 @@ def display():
         
         glDrawArrays(GL_TRIANGLES, 0, len(targets.model[0]))
         
-    if mouse_over_window():
+    if mouse_over_window() and expe.technique == 'mouse':
         cam.wiggle_pivot = mouse_intersection(mouse[0], mouse[1], cam, window_w, window_h)
     
     if pdp.display:

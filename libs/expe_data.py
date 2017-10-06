@@ -49,19 +49,13 @@ def cross(v1,v2):
             v1[2]*v2[0]-v1[0]*v2[2],
             v1[0]*v2[1]-v1[1]*v2[0]]
 
-def project(p, mp, mm, w, h):
-    n_p = mp.dot(mm.dot(np.array(p)))
-    n_p = n_p/n_p[3]
-    n_p = n_p/n_p[2]
-    return [w*(n_p[0]+1)/2.0, h*(n_p[1]+1)/2.0]
-
 
 class expe_data():
     def __init__(self, nb_target_per_circle = 13, amplitude = 8, mm = np.identity(4), mp = np.identity(4), win_w = 800, win_h = 600):
         self.user_name      = "testman"
         self.technique      = "none"
         self.ids            = np.array([[3, .6], [4, .3], [5, .2], [6, .1]])
-        self.nb_trials      = 10
+        self.nb_trials      = 1
         self.trials         = []
         self.circles        = []
         self.models         = []
@@ -92,16 +86,22 @@ class expe_data():
         self.current_circle = self.circles[int(self.confs[0][2])]
         self.current_model  = self.models[int(self.confs[0][2])]
         
+    def project(self, p):
+        n_p = self.m_projection.dot(self.m_modelview.dot(np.array(p)))
+        n_p = n_p/n_p[3]
+        n_p = n_p/n_p[2]
+        return [self.window_w*(n_p[0]+1)/2.0, self.window_h*(n_p[1]+1)/2.0]
+    
     def shuffle_trials(self):
         self.confs = np.repeat(self.ids, self.nb_trials, axis=0)
         np.random.shuffle(self.confs)
-        
+    
     def save_current_conf(self):
         np.save("ids", self.confs[self.current_index:])
-        
+    
     def reload_conf(self):
         self.confs = np.load("ids.npy")
-        
+    
     def next(self):
         self.current_index += 1
         if self.current_index == len(self.confs):
@@ -111,26 +111,30 @@ class expe_data():
         
         self.save_current_conf()
         return True
-        
+    
     def print_current_conf(self):
         print("expe conf", self.current_index, ":", *self.confs[self.current_index])
-        
+    
     def new_trial(self, t, m):
         prev_pos = self.current_circle.positions[self.current_circle.current_target -1]
         new_pos = self.current_circle.positions[self.current_circle.current_target]
+        sil_pos = new_pos[:]
+        sil_pos[0] += self.current_circle.width/2.0 #outline point along X axis
         
-        p_prev_pos  = project(prev_pos, self.m_projection, self.m_modelview, self.window_w, self.window_h)
-        p_new_pos   = project(new_pos, self.m_projection, self.m_modelview, self.window_w, self.window_h)
+        p_prev_pos  = self.project(prev_pos)
+        p_new_pos   = self.project(new_pos)
+        p_sil_pos   = self.project(sil_pos)
         
         self.trials.append({'id': self.confs[self.current_index][0],
                             'rho': self.confs[self.current_index][1],
+                            'width': distance(p_sil_pos, p_new_pos)*2,
                             'mt': t - self.time, 
                             'p_click': self.mouse,
                             'n_click': m, 
                             'p_target_pos': p_prev_pos, 
                             'n_target_pos': p_new_pos})
         self.save_trials()
-        
+    
     def save_trials(self):
         f = open(self.user_name+'_'+self.technique+'.res', 'w')
         f.write("id, rho, angle, w, a, mt, dist\n")
@@ -146,7 +150,7 @@ class expe_data():
             f.write(str(t['id'])                    +','+
                     str(t['rho'])                   +','+
                     str(angle)                      +','+
-                    str(self.current_circle.width)  +','+
+                    str(t['width'])                 +','+
                     str(targets_dist)               +','+
                     str(travelled_dist)             +'\n'
                     )
