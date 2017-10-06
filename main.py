@@ -205,8 +205,7 @@ def init_shaders():
     unif_d = glGetUniformLocation(object.sh, "displacement")
     glUniformMatrix4fv(unif_d, 1, False, object.displacement)
     
-    expe.m_modelview    = cam.m_modelview
-    expe.m_projection   = cam.m_projection
+    expe.cam    = cam
 
 
 def init():
@@ -360,8 +359,12 @@ def mouse_over_window():
 
 
 def idle():
+    global window_w, window_h
     window_w = glutGet(GLUT_WINDOW_WIDTH)
     window_h = glutGet(GLUT_WINDOW_HEIGHT)
+    
+    expe.window_w = window_w
+    expe.window_h = window_h
     
     #projection update (in case the window is reshaped)
     cam.compute_perspective(window_w/window_h)

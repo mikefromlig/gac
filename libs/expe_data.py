@@ -51,11 +51,11 @@ def cross(v1,v2):
 
 
 class expe_data():
-    def __init__(self, nb_target_per_circle = 13, amplitude = 8, mm = np.identity(4), mp = np.identity(4), win_w = 800, win_h = 600):
+    def __init__(self, nb_target_per_circle = 13, amplitude = 8, win_w = 800, win_h = 600):
         self.user_name      = "testman"
         self.technique      = "none"
         self.ids            = np.array([[3, .6], [4, .3], [5, .2], [6, .1]])
-        self.nb_trials      = 1
+        self.nb_trials      = 10
         self.trials         = []
         self.circles        = []
         self.models         = []
@@ -64,12 +64,9 @@ class expe_data():
         self.nb_t_p_circ    = nb_target_per_circle
         self.amplitude      = 8
         self.current_index  = 0
-        self.current_circle = None
-        self.current_model  = None
         
         #camera info
-        self.m_modelview    = mm
-        self.m_projection   = mp
+        self.cam            = None
         self.window_w       = win_w
         self.window_h       = win_h
         
@@ -87,7 +84,7 @@ class expe_data():
         self.current_model  = self.models[int(self.confs[0][2])]
         
     def project(self, p):
-        n_p = self.m_projection.dot(self.m_modelview.dot(np.array(p)))
+        n_p = self.cam.m_projection.dot(self.cam.m_modelview.dot(np.array(p)))
         n_p = n_p/n_p[3]
         n_p = n_p/n_p[2]
         return [self.window_w*(n_p[0]+1)/2.0, self.window_h*(n_p[1]+1)/2.0]
