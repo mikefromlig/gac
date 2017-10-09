@@ -32,10 +32,16 @@ class camera():
         self.wiggle_time        = time.time()
         self.wiggle_angle       = 0
         
+        #without wiggling
+        self.compute_perspective(self.ratio)
+        self.i_m_projection   = self.m_projection[:]
+        self.compute_modelview()
+        self.i_m_modelview    = self.m_modelview[:]
+        
         
     def compute_perspective(self, ratio):
         self.ratio = ratio
-        self.m_projection= vp.perspective(self.v_angle, self.ratio, self.near, self.far) 
+        self.m_projection= vp.perspective(self.v_angle, self.ratio, self.near, self.far)
         
         
     def compute_modelview(self):

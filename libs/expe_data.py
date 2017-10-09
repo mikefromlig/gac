@@ -84,7 +84,7 @@ class expe_data():
         self.current_model  = self.models[int(self.confs[0][2])]
         
     def project(self, p):
-        n_p = self.cam.m_projection.dot(self.cam.m_modelview.dot(np.array(p)))
+        n_p = self.cam.i_m_projection.dot(self.cam.i_m_modelview.dot(np.array(p)))
         n_p = n_p/n_p[3]
         n_p = n_p/n_p[2]
         return [self.window_w*(n_p[0]+1)/2.0, self.window_h*(n_p[1]+1)/2.0]
