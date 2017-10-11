@@ -25,6 +25,7 @@ import  libs.shader     as sh
 import  libs.iso_circle as ic
 import  libs.object     as o
 import  libs.pdp        as pdp
+import  libs.tobii     as tobii
 
 ################################################################################
 # GLOBALS
@@ -32,6 +33,7 @@ import  libs.pdp        as pdp
 ## interaction
 window_w, window_h = 800, 600
 mouse   = [-1, -1]
+eye     = [-1, -1]
 
 ## expe info
 expe = expe_data(3, 8)
@@ -51,6 +53,9 @@ cam.wiggle = True
 ## pivot point display
 pdp = pdp.pivot_point()
 pdp.display = False
+
+tob = tobii.tobii("129.88.65.158", 8888)        #tobii udp connection
+
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
@@ -249,8 +254,12 @@ def display():
         
         glDrawArrays(GL_TRIANGLES, 0, len(targets.model[0]))
         
-    if mouse_over_window() and expe.technique == 'mouse':
-        cam.wiggle_pivot = mouse_intersection(mouse[0], mouse[1], cam, window_w, window_h)
+    if expe.technique == 'mouse':
+        if pointer_over_window(mouse):
+            cam.wiggle_pivot = mouse_intersection(mouse[0], mouse[1], cam, window_w, window_h)
+    elif expe.technique == 'eye':
+        if pointer_over_window(eye):
+            cam.wiggle_pivot = mouse_intersection(eye[0], eye[1], cam, window_w, window_h)
     
     if pdp.display:
         glUseProgram(pdp.sh)
@@ -265,7 +274,6 @@ def display():
         glBufferData(GL_ARRAY_BUFFER, pdp.model[2].astype('float32'), GL_DYNAMIC_DRAW)
         
         glDrawArrays(GL_TRIANGLES, 0, len(pdp.model[0]))
-    #glEnable(GL_DEPTH_TEST)
     
     glutSwapBuffers()
 
@@ -348,18 +356,20 @@ def mouse_passive(x, y):
     glutPostRedisplay()
 
 
-def mouse_over_window():
-    if  mouse[0] >= 0 and \
-        mouse[0] <= window_w and \
-        mouse[1] >= 0 and \
-        mouse[1] <= window_h :
+def pointer_over_window(m):
+    if  m[0] >= 0 and \
+        m[0] <= window_w and \
+        m[1] >= 0 and \
+        m[1] <= window_h :
         return True
     else:
         return False
 
 
 def idle():
-    global window_w, window_h
+    
+    global window_w, window_h, eye
+    
     window_w = glutGet(GLUT_WINDOW_WIDTH)
     window_h = glutGet(GLUT_WINDOW_HEIGHT)
     
@@ -389,6 +399,13 @@ def idle():
     glUseProgram(pdp.sh)
     unif_d = glGetUniformLocation(pdp.sh, "displacement")
     glUniformMatrix4fv(unif_d, 1, False, pdp.displacement)
+    
+    #Recovering tobii events
+    if expe.technique == 'eye':
+        data = tob.recv_data()
+        tab = np.array(data.split("_"), dtype='int')
+        if tab[0] > 0 and tab[1] > 0 and tab[2] == 1:
+            eye = [tab[0], tab[1]]
     
     glutPostRedisplay()
 

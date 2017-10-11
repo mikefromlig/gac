@@ -22,7 +22,7 @@ def vector(a, b):
     return v
 
 
-def norme(v):
+def norm(v):
     n = 0
     for i in v:
         n += i*i
@@ -31,7 +31,7 @@ def norme(v):
 
 def normalized(v):
     res = v[:]
-    n = norme(res)
+    n = norm(res)
     for i in range(len(res)):
         res[i] /= n
     return res
@@ -133,14 +133,22 @@ class expe_data():
         self.save_trials()
     
     def save_trials(self):
-        f = open(self.user_name+'_'+self.technique+'.res', 'w')
-        f.write("id, rho, angle, w, a, mt, dist\n")
+        f = open('results/'+self.user_name+'_'+self.technique+'.res', 'w')
+        f.write("id, rho, angle, w, a, mt, dist, we\n")
         for t in self.trials:
             travelled_dist = distance(t['p_click'], t['n_click'])
             targets_dist = distance(t['p_target_pos'], t['n_target_pos'])
             v1 = [1,0]
             v2 = normalized(vector(t['p_target_pos'], t['n_target_pos']))
             angle = math.acos(dot(v1, v2))*180/math.pi
+            
+            v_we = vector(t['n_target_pos'], t['n_click'])
+            n = norm(v_we)
+            v_we = normalized(v_we)
+            for i in range(len(v2)):
+                v2[i] = -v2[i]
+            we = n*dot(v2, v_we)
+            
             if cross([v1[0], v1[1], 0], [v2[0], v2[1], 0])[2] < 0:
                 angle = angle + 180
             
