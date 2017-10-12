@@ -46,6 +46,10 @@ targets.model = expe.current_circle.model
 object = o.object()
 object.model = expe.current_model
 
+
+## eye
+eye_disc = o.object()
+
 ## camera
 cam = camera([0, 0, 15], [0, 0, 0], [0, 1, 0], 45.0, window_w/window_h)
 cam.wiggle = True
@@ -56,10 +60,12 @@ pdp.display = False
 
 tob = tobii.tobii("129.88.65.158", 8888)        #tobii udp connection
 
-
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
+
+def create_disc(r, tess):
+    return None
 
 def mouse_intersection(mouse_x, mouse_y, camera, win_w, win_h):
     
@@ -213,10 +219,16 @@ def init_shaders():
     expe.cam    = cam
 
 
+def init_eye():
+    eye_disc.model = create_disc(.2, 20)
+
+
 def init():
     print("\nInit")
     init_OGL()
     init_shaders()
+    init_eye()
+    
     print()
     expe.print_current_conf()
     expe.save_current_conf()
@@ -297,6 +309,9 @@ def keyboard(key, x, y):
         object.display = not object.display
     elif key == b'p':
         pdp.display = not pdp.display
+    elif key == b'c':
+        print(  eye[0],eye[1],mouse[0],mouse[1]
+                )
     else:
         print(key)
     
@@ -405,7 +420,7 @@ def idle():
         data = tob.recv_data()
         tab = np.array(data.split("_"), dtype='int')
         if tab[0] > 0 and tab[1] > 0 and tab[2] == 1:
-            eye = [tab[0], tab[1]]
+            eye = [tab[0]*0.66, tab[1]*.67]
     
     glutPostRedisplay()
 
