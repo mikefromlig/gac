@@ -63,10 +63,6 @@ tob = tobii.tobii("129.88.65.158", 8888)        #tobii udp connection
 ################################################################################
 # INIT & COMPUTATION FUNCS
 
-
-def create_disc(r, tess):
-    return None
-
 def mouse_intersection(mouse_x, mouse_y, camera, win_w, win_h):
     
     winZ = glReadPixels( mouse_x, win_h - mouse_y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT);
@@ -196,6 +192,31 @@ def init_shaders():
         exit(1)
     print('\t\tOk')
     
+    
+    ##########################
+    # eye display shader
+    eye_disc.vbos     = glGenBuffers(2)
+    eye_disc_sh_attr  = [8, 9]
+    
+    #vertices
+    glBindBuffer(GL_ARRAY_BUFFER, eye_disc.vbos[0])
+    glBufferData(GL_ARRAY_BUFFER, eye_disc.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(eye_disc_sh_attr[0], 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(eye_disc_sh_attr[0])
+    
+    #colors
+    glBindBuffer(GL_ARRAY_BUFFER, eye_disc.vbos[1])
+    glBufferData(GL_ARRAY_BUFFER, eye_disc.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+    glVertexAttribPointer(eye_disc_sh_attr[1], 4, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(eye_disc_sh_attr[1])
+    
+    print('\tEye disc shader...', end='')
+    eye_disc.sh = sh.create('shaders/eye_disc_vert.vert',None,'shaders/eye_disc_frag.vert', eye_disc_sh_attr, ['in_vertex', 'in_color'])
+    if not eye_disc.sh:
+        exit(1)
+    print('\t\tOk')
+    
+    
     ##########################
     # init projections
     cam.compute_modelview()
@@ -220,7 +241,7 @@ def init_shaders():
 
 
 def init_eye():
-    eye_disc.model = create_disc(.2, 20)
+    eye_disc.model = ic.circle([0,0,0], .05, 20, [1,0,0,.5])
 
 
 def init():
@@ -272,6 +293,8 @@ def display():
     elif expe.technique == 'eye':
         if pointer_over_window(eye):
             cam.wiggle_pivot = mouse_intersection(eye[0], eye[1], cam, window_w, window_h)
+            if eye_disc.display:
+                eye_disc.model = ic.circle([eye[0]/window_w*2 - 1,(window_h - eye[1])/window_h*2 - 1,0], .05, 20, [1,0,0,.5])
     
     if pdp.display:
         glUseProgram(pdp.sh)
@@ -286,6 +309,17 @@ def display():
         glBufferData(GL_ARRAY_BUFFER, pdp.model[2].astype('float32'), GL_DYNAMIC_DRAW)
         
         glDrawArrays(GL_TRIANGLES, 0, len(pdp.model[0]))
+        
+    if eye_disc.display:
+        glUseProgram(eye_disc.sh)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, eye_disc.vbos[0])
+        glBufferData(GL_ARRAY_BUFFER, eye_disc.model[0].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, eye_disc.vbos[1])
+        glBufferData(GL_ARRAY_BUFFER, eye_disc.model[1].astype('float32'), GL_DYNAMIC_DRAW)
+        
+        glDrawArrays(GL_TRIANGLES, 0, len(eye_disc.model[0]))
     
     glutSwapBuffers()
 
@@ -300,8 +334,8 @@ def keyboard(key, x, y):
         glutFullScreen()
     elif key == b'w':
         cam.wiggle = not cam.wiggle
-    #elif key == b't':
-    #    iso_circle.display = not iso_circle.display
+    elif key == b'e':
+        eye_disc.display = not eye_disc.display
     #elif key == b'a':
     #    iso_circle.display_all = not iso_circle.display_all
     #    iso_circle.make_circle()
@@ -420,7 +454,8 @@ def idle():
         data = tob.recv_data()
         tab = np.array(data.split("_"), dtype='int')
         if tab[0] > 0 and tab[1] > 0 and tab[2] == 1:
-            eye = [tab[0]*0.66, tab[1]*.67]
+            #eye = [tab[0]*0.66, tab[1]*.67]
+            eye = [tab[0], tab[1]]
     
     glutPostRedisplay()
 
@@ -440,6 +475,7 @@ print("\t'f': fullscreen")
 print("\t'w': start/stop wiggle")
 print("\t'p': display/hide pivot point")
 print("\t'o': display/hide object")
+print("\t'e': display/hide eye position")
 #print("\t'a': display all/one target")
 
 
@@ -451,6 +487,10 @@ if len(sys.argv) > 1:
             i += 1
         elif sys.argv[i] == '-t':
             expe.technique = sys.argv[i+1]
+            if expe.technique == 'eye':
+                eye_disc.display = True
+            else:
+                eye_disc.display = False
             i += 1
         elif sys.argv[i] == '-reload':
             expe.reload_conf()
