@@ -34,7 +34,7 @@ def normalized(v):
     n = norm(res)
     for i in range(len(res)):
         res[i] /= n
-    return res
+    return res, n
 
 
 def dot(u, v):
@@ -122,42 +122,47 @@ class expe_data():
         p_new_pos   = self.project(new_pos)
         p_sil_pos   = self.project(sil_pos)
         
-        self.trials.append({'id': self.confs[self.current_index][0],
-                            'rho': self.confs[self.current_index][1],
-                            'width': distance(p_sil_pos, p_new_pos)*2,
-                            'mt': t - self.time, 
-                            'p_click': self.mouse,
-                            'n_click': m, 
-                            'p_target_pos': p_prev_pos, 
-                            'n_target_pos': p_new_pos})
+        self.trials.append({'id':               self.confs[self.current_index][0],
+                            'rho':              self.confs[self.current_index][1],
+                            'width':            distance(p_sil_pos, p_new_pos)*2,
+                            'mt':               t - self.time, 
+                            'prev_click':       self.mouse,
+                            'new_click':        m, 
+                            'prev_target_pos':  p_prev_pos, 
+                            'new_target_pos':   p_new_pos,
+                            'error':            0
+                            })
         self.save_trials()
     
     def save_trials(self):
         f = open('results/'+self.user_name+'_'+self.technique+'.res', 'w')
-        f.write("id, rho, angle, w, a, mt, dist, we\n")
+        f.write("id,rho,angle,w,a,we,ae,mt,error\n")
+        
         for t in self.trials:
-            travelled_dist = distance(t['p_click'], t['n_click'])
-            targets_dist = distance(t['p_target_pos'], t['n_target_pos'])
-            v1 = [1,0]
-            v2 = normalized(vector(t['p_target_pos'], t['n_target_pos']))
-            angle = math.acos(dot(v1, v2))*180/math.pi
+            travelled_dist = distance(t['prev_click'], t['new_click'])
+            targets_dist = distance(t['prev_target_pos'], t['new_target_pos'])
+            v_up = [1,0]
+            v_targets, n = normalized(vector(t['prev_target_pos'], t['new_target_pos']))
+            angle = math.acos(dot(v_up, v_targets))*180/math.pi
             
-            v_we = vector(t['n_target_pos'], t['n_click'])
-            n = norm(v_we)
-            v_we = normalized(v_we)
-            for i in range(len(v2)):
-                v2[i] = -v2[i]
-            we = n*dot(v2, v_we)
+            v_we, n_v_we = normalized(vector(t['new_target_pos'], t['new_click']))
+            we = math.fabs(n_v_we*dot(v_we, v_targets))
             
-            if cross([v1[0], v1[1], 0], [v2[0], v2[1], 0])[2] < 0:
+            v_clicks, n_v_clicks = normalized(vector(t['prev_click'],t['new_click']))
+            ae = math.fabs(n_v_clicks*dot(v_clicks, v_targets))
+            
+            if cross([v_up[0], v_up[1], 0], [v_targets[0], v_targets[1], 0])[2] < 0:
                 angle = angle + 180
             
-            f.write(str(t['id'])                    +','+
-                    str(t['rho'])                   +','+
-                    str(angle)                      +','+
-                    str(t['width'])                 +','+
-                    str(targets_dist)               +','+
-                    str(travelled_dist)             +'\n'
+            f.write(str(t['id'])                    +','+ #id
+                    str(t['rho'])                   +','+ #rho
+                    str(angle)                      +','+ #angle
+                    str(t['width'])                 +','+ #w
+                    str(targets_dist)               +','+ #a
+                    str(we)                         +','+ #we
+                    str(ae)                         +','+ #ae
+                    str(t['mt'])                    +','+ #mt
+                    str(t['error'])                 +'\n' #error \
                     )
         f.close()
 

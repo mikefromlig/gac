@@ -358,9 +358,6 @@ def clicks(button, state, x, y):
     
     global object
     
-    mouse[0] = x
-    mouse[1] = y
-    
     nt = time.time()
     
     if button == GLUT_LEFT_BUTTON:
@@ -369,11 +366,11 @@ def clicks(button, state, x, y):
                 
                 if expe.current_circle.current_target == 0:
                     expe.time   = nt
-                    expe.mouse  = [x, y]
+                    expe.mouse  = [x, window_h - y]
                 else:
-                    expe.new_trial(nt, [x, y])
+                    expe.new_trial(nt, [x, window_h - y])
                     expe.time   = nt
-                    expe.mouse  = [x, y]
+                    expe.mouse  = [x, window_h - y]
                 
                 if expe.current_circle.current_target >= 0:
                     p = expe.current_circle.positions[expe.current_circle.current_target]
@@ -401,9 +398,6 @@ def clicks(button, state, x, y):
 
 
 def mouse_passive(x, y):
-    mouse[0] = x
-    mouse[1] = y
-    
     glutPostRedisplay()
 
 
