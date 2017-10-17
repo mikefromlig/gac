@@ -51,7 +51,7 @@ def cross(v1,v2):
 
 
 class expe_data():
-    def __init__(self, nb_target_per_circle = 13, amplitude = 8, win_w = 800, win_h = 600):
+    def __init__(self, nb_target_per_circle = 13, diameter = 8, win_w = 800, win_h = 600):
         self.user_name      = "testman"
         self.technique      = "none"
         self.ids            = np.array([[3, .6], [4, .3], [5, .2], [6, .1]])
@@ -62,8 +62,9 @@ class expe_data():
         self.time           = 0
         self.mouse          = [0, 0]
         self.nb_t_p_circ    = nb_target_per_circle
-        self.amplitude      = 8
+        self.diameter      = diameter
         self.current_index  = 0
+        self.missed         = 0
         
         #camera info
         self.cam            = None
@@ -72,7 +73,7 @@ class expe_data():
         
         
         for id in self.ids:
-            self.circles.append(iso.iso_circle(self.nb_t_p_circ, self.amplitude, id[0], id[1]))
+            self.circles.append(iso.iso_circle(self.nb_t_p_circ, self.diameter, id[0], id[1]))
             self.models.append(dis.make_distractor(self.circles[-1].ID, self.circles[-1].amplitude, self.circles[-1].rho, self.circles[-1].width))
         
         arr = np.arange(len(self.ids)).reshape((len(self.ids), 1))
@@ -130,12 +131,12 @@ class expe_data():
                             'new_click':        m, 
                             'prev_target_pos':  p_prev_pos, 
                             'new_target_pos':   p_new_pos,
-                            'error':            0
+                            'error':            self.missed
                             })
         self.save_trials()
     
     def save_trials(self):
-        f = open('results/'+self.user_name+'_'+self.technique+'.res', 'w')
+        f = open('results/'+self.user_name+'_'+self.technique+'.csv', 'w')
         f.write("id,rho,angle,w,a,we,ae,mt,error\n")
         
         for t in self.trials:

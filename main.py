@@ -36,7 +36,7 @@ mouse   = [-1, -1]
 eye     = [-1, -1]
 
 ## expe info
-expe = expe_data(3, 8)
+expe = expe_data(11, 8) #nb targets around the iso_circle, iso_circle diameter
 
 ## targets
 targets = o.object()
@@ -356,9 +356,11 @@ def keyboard(key, x, y):
 
 def clicks(button, state, x, y):
     
-    global object
+    global object, mouse
     
     nt = time.time()
+    
+    mouse = [x, y]
     
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
@@ -390,14 +392,20 @@ def clicks(button, state, x, y):
                         sys.exit()
                     expe.print_current_conf()
                     object.model = expe.current_model
+                
                 expe.current_circle.make_circle()
                 targets.model = expe.current_circle.model
                 
-                
+                expe.missed = 0
+            else:
+                expe.missed += 1
+    
     glutPostRedisplay()
 
 
 def mouse_passive(x, y):
+    global mouse
+    mouse = [x, y]
     glutPostRedisplay()
 
 
