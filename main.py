@@ -216,7 +216,6 @@ def init_shaders():
         exit(1)
     print('\t\tOk')
     
-    
     ##########################
     # init projections
     cam.compute_modelview()
@@ -241,7 +240,7 @@ def init_shaders():
 
 
 def init_eye():
-    eye_disc.model = ic.circle([0,0,0], .05, 20, [1,0,0,.5])
+    eye_disc.model = ic.circle([0,0,0], .05, 20, [1,0,0,.5], window_w/window_h)
 
 
 def init():
@@ -294,7 +293,10 @@ def display():
         if pointer_over_window(eye):
             cam.wiggle_pivot = mouse_intersection(eye[0], eye[1], cam, window_w, window_h)
             if eye_disc.display:
-                eye_disc.model = ic.circle([eye[0]/window_w*2 - 1,(window_h - eye[1])/window_h*2 - 1,0], .05, 20, [1,0,0,.5])
+                eye_disc.model = ic.circle( [eye[0]/window_w*2 - 1,(window_h - eye[1])/window_h*2 - 1,0],
+                                            .02, 
+                                            20, 
+                                            [1,0,0,.5], window_w/window_h)
     
     if pdp.display:
         glUseProgram(pdp.sh)

@@ -49,7 +49,7 @@ class iso_circle:
                 color = [1, 0, 0, .3]
             if i == self.current_target:
                     color = [0, 1, 0, 1]
-            t, c = circle(self.positions[i][:3], self.width/2.0, 20, color)
+            t, c = circle(self.positions[i][:3], self.width/2.0, 20, color, 1)
             vertices.extend(t)
             colors.extend(c)
             
@@ -88,14 +88,14 @@ class iso_circle:
             return 0
 
 
-def circle(p, r, nb_arcs, color):
+def circle(p, r, nb_arcs, color, ratio):
     angle = 2*math.pi/nb_arcs
     arr, col = [], []
     for i in range(nb_arcs):
         x1 = math.cos(i*angle)*r
-        y1 = math.sin(i*angle)*r
+        y1 = math.sin(i*angle)*r*ratio
         x2 = math.cos((i+1)*angle)*r
-        y2 = math.sin((i+1)*angle)*r
+        y2 = math.sin((i+1)*angle)*r*ratio
         
         arr.append(np.array([0,    0,  0])+p)
         arr.append(np.array([x1,   y1, 0])+p)
