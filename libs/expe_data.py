@@ -137,7 +137,7 @@ class expe_data():
     
     def save_trials(self):
         f = open('results/'+self.user_name+'_'+self.technique+'.csv', 'w')
-        f.write("id,rho,angle,w,a,we,ae,mt,error\n")
+        f.write("tech,id,rho,angle,w,a,we,ae,mt,error\n")
         
         for t in self.trials:
             travelled_dist = distance(t['prev_click'], t['new_click'])
@@ -155,7 +155,8 @@ class expe_data():
             if cross([v_up[0], v_up[1], 0], [v_targets[0], v_targets[1], 0])[2] < 0:
                 angle = angle + 180
             
-            f.write(str(t['id'])                    +','+ #id
+            f.write(self.technique                  +','+ #tech
+                    str(t['id'])                    +','+ #id
                     str(t['rho'])                   +','+ #rho
                     str(angle)                      +','+ #angle
                     str(t['width'])                 +','+ #w
