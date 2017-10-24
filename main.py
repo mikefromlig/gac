@@ -3,10 +3,13 @@
 #Michael ORTEGA - 11/09/2017
 
 ###### GLOBAL LIBS
-import sys
-import numpy    as np
-import math
-import platform as pl
+import  sys
+import  numpy    as np
+from    scipy.interpolate  import griddata
+import  math
+import  platform as pl
+import  pickle   as pick
+import os.path
 
 try:
     from OpenGL.GL      import *
@@ -46,7 +49,6 @@ targets.model = expe.current_circle.model
 object = o.object()
 object.model = expe.current_model
 
-
 ## eye
 eye_disc = o.object()
 
@@ -59,6 +61,24 @@ pdp = pdp.pivot_point()
 pdp.display = False
 
 tob = tobii.tobii("129.88.65.158", 8888)        #tobii udp connection
+
+class calibration():
+    def __init__(self):
+        self.on             = False
+        self.can_interpolate= False
+        self.mouse_x        = []
+        self.mouse_y        = []
+        self.eye            = []
+        self.eye_tmp_x      = []
+        self.eye_tmp_y      = []
+        self.f_x            = None
+        self.f_y            = None
+
+calib = calibration()
+
+dt = 0
+lt = time.time()
+nt = 0
 
 ################################################################################
 # INIT & COMPUTATION FUNCS
@@ -259,6 +279,10 @@ def init():
 
 
 def display():
+    if calib.on:
+        glClearColor(0,1,0,1)
+    else:
+        glClearColor(1,1,1,1)
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
     if object.display and expe.current_circle.current_target > 0:
@@ -332,6 +356,12 @@ def display():
 def keyboard(key, x, y):
     if key == b'\x1b':
         sys.exit()
+    elif key == b't':
+        global dt, lt, nt
+        print('Frame rate:', 1/(dt/nt))
+        dt = 0
+        lt = time.time()
+        nt = 0
     elif key == b'f':
         glutFullScreen()
     elif key == b'w':
@@ -346,8 +376,26 @@ def keyboard(key, x, y):
     elif key == b'p':
         pdp.display = not pdp.display
     elif key == b'c':
-        print(  eye[0],eye[1],mouse[0],mouse[1]
-                )
+        calib.on = not calib.on
+        if calib.on:
+            calib.mouse_x.append(mouse[0])
+            calib.mouse_y.append(mouse[1])
+            calib.tmp_eye_x = []
+            calib.tmp_eye_y = []
+        else:
+            if len(calib.tmp_eye_x) > 0 and len(calib.tmp_eye_y):
+                m_x = np.mean(calib.tmp_eye_x)
+                m_y = np.mean(calib.tmp_eye_y)
+                if not math.isnan(m_x) and not math.isnan(m_y):
+                    calib.eye.append([m_x, m_y])
+                else:
+                    calib.mouse_x.pop()
+                    calib.mouse_y.pop()
+                
+                if len(calib.eye) > 3:
+                    calib.can_interpolate = True
+                    pick.dump(calib, open('calibs/'+expe.user_name+'.cal', 'wb'))
+                    print(len(calib.eye), 'calibration pts')
     else:
         print(key)
     
@@ -422,6 +470,10 @@ def pointer_over_window(m):
 def idle():
     
     global window_w, window_h, eye
+    global dt, lt, nt
+    dt += time.time() - lt
+    lt = time.time()
+    nt += 1
     
     window_w = glutGet(GLUT_WINDOW_WIDTH)
     window_h = glutGet(GLUT_WINDOW_HEIGHT)
@@ -459,8 +511,15 @@ def idle():
         tab = np.array(data.split("_"), dtype='int')
         if tab[0] > 0 and tab[1] > 0 and tab[2] == 1:
             #eye = [tab[0]*0.66, tab[1]*.67]
+            #eye = [(eye[0] + tab[0])/2.0, (eye[1] + tab[1])/2.0]
             eye = [tab[0], tab[1]]
-    
+            if calib.on:
+                calib.tmp_eye_x.append(eye[0])
+                calib.tmp_eye_y.append(eye[1])
+            elif calib.can_interpolate:
+                eye[0] = griddata(calib.eye, calib.mouse_x, eye, method='linear')
+                eye[1] = griddata(calib.eye, calib.mouse_y, eye, method='linear')
+            
     glutPostRedisplay()
 
 
@@ -502,6 +561,10 @@ if len(sys.argv) > 1:
 print('Expe info')
 print('\t user: ',expe.user_name)
 print('\t tech: ',expe.technique)
+
+file_n = 'calibs/'+expe.user_name+'.cal'
+if expe.technique == 'eye' and os.path.exists(file_n):
+    calib = pick.load(open(file_n, 'rb'))
 
 
 glutInit(sys.argv)
