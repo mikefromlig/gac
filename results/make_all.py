@@ -4,6 +4,7 @@
 
 import os
 import numpy
+import math
 
 header = None
 lines = []
@@ -18,6 +19,7 @@ for f_name in os.listdir('.'):
         header = ['user']
         header.extend(f.readline().split(','))
         header[-1] = header[-1].rstrip()
+        header.append("tp")
         
         #other lines
         for line in f.readlines():
@@ -88,7 +90,7 @@ for k in aggre_a:
     aggre_a[k][8]     /= aggre_a[k][11]
     aggre_a[k][9]     /= aggre_a[k][11]
     aggre_a[k][10]    /= aggre_a[k][11]
-    aggre_a[k].pop()
+    aggre_a[k][11]    = math.log2(aggre_a[k][8]/aggre_a[k][7] + 1)/aggre_a[k][9]
 
 
 for k in aggre:
@@ -96,12 +98,12 @@ for k in aggre:
     aggre[k][8]     /= aggre[k][11]
     aggre[k][9]     /= aggre[k][11]
     aggre[k][10]    /= aggre[k][11]
-    aggre[k].pop()
+    aggre[k][11]    = math.log2(aggre[k][8]/aggre[k][7] + 1)/aggre[k][9]
 
 import csv
 with open('all.csv', 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerow(header)
+    spamwriter.writerow(header[:-1])
     for line in lines:
         spamwriter.writerow(line)
 
