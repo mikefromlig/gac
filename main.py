@@ -383,7 +383,7 @@ def keyboard(key, x, y):
             calib.tmp_eye_x = []
             calib.tmp_eye_y = []
         else:
-            if len(calib.tmp_eye_x) > 0 and len(calib.tmp_eye_y):
+            if len(calib.tmp_eye_x) > 0 and len(calib.tmp_eye_y) > 0:
                 m_x = np.mean(calib.tmp_eye_x)
                 m_y = np.mean(calib.tmp_eye_y)
                 if not math.isnan(m_x) and not math.isnan(m_y):
@@ -396,6 +396,9 @@ def keyboard(key, x, y):
                     calib.can_interpolate = True
                     pick.dump(calib, open('calibs/'+expe.user_name+'.cal', 'wb'))
                     print(len(calib.eye), 'calibration pts')
+            else:
+                calib.mouse_x.pop()
+                calib.mouse_y.pop()
     else:
         print(key)
     
@@ -417,10 +420,12 @@ def clicks(button, state, x, y):
                 if expe.current_circle.current_target == 0:
                     expe.time   = nt
                     expe.mouse  = [x, window_h - y]
+                    expe.prev_pos = expe.current_circle.positions[expe.current_circle.current_target]
                 else:
                     expe.new_trial(nt, [x, window_h - y])
                     expe.time   = nt
                     expe.mouse  = [x, window_h - y]
+                    expe.prev_pos = expe.current_circle.positions[expe.current_circle.current_target]
                 
                 if expe.current_circle.current_target >= 0:
                     p = expe.current_circle.positions[expe.current_circle.current_target]
@@ -430,6 +435,7 @@ def clicks(button, state, x, y):
                     glUseProgram(object.sh)
                     unif_d = glGetUniformLocation(object.sh, "displacement")
                     glUniformMatrix4fv(unif_d, 1, False, object.displacement)
+                    expe.prev_pos = p
                 
                 expe.current_circle.next()
                 expe.current_circle.make_circle()

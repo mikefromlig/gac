@@ -65,6 +65,7 @@ class expe_data():
         self.diameter      = diameter
         self.current_index  = 0
         self.missed         = 0
+        self.prev_pos       = None
         
         #camera info
         self.cam            = None
@@ -85,7 +86,7 @@ class expe_data():
         self.current_model  = self.models[int(self.confs[0][2])]
         
     def project(self, p):
-        n_p = self.cam.i_m_projection.dot(self.cam.i_m_modelview.dot(np.array(p)))
+        n_p = self.cam.m_projection.dot(self.cam.i_m_modelview.dot(np.array(p)))
         n_p = n_p/n_p[3]
         n_p = n_p/n_p[2]
         return [self.window_w*(n_p[0]+1)/2.0, self.window_h*(n_p[1]+1)/2.0]
@@ -114,7 +115,7 @@ class expe_data():
         print("expe conf", self.current_index, ":", *self.confs[self.current_index])
     
     def new_trial(self, t, m):
-        prev_pos = self.current_circle.positions[self.current_circle.current_target -1]
+        prev_pos = self.prev_pos
         new_pos = self.current_circle.positions[self.current_circle.current_target]
         sil_pos = new_pos[:]
         sil_pos[0] += self.current_circle.width/2.0 #outline point along X axis
@@ -147,13 +148,13 @@ class expe_data():
             angle = math.acos(dot(v_up, v_targets))*180/math.pi
             
             v_we, n_v_we = normalized(vector(t['new_target_pos'], t['new_click']))
-            we = math.fabs(n_v_we*dot(v_we, v_targets))
+            we = n_v_we*dot(v_we, v_targets)
             
             v_clicks, n_v_clicks = normalized(vector(t['prev_click'],t['new_click']))
             ae = math.fabs(n_v_clicks*dot(v_clicks, v_targets))
             
             if cross([v_up[0], v_up[1], 0], [v_targets[0], v_targets[1], 0])[2] < 0:
-                angle = angle + 180
+                angle = 360 - angle
             
             f.write(self.technique                  +','+ #tech
                     str(t['id'])                    +','+ #id
